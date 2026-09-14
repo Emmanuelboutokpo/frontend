@@ -1,0 +1,2 @@
+import BackofficePage from "@/components/back-office/BackofficePage";
+export default function ProprietaireStatistiquesPage() { return <BackofficePage eyebrow="Propriétaire" title="Statistiques" description="Analysez les performances de vos établissements et de vos réservations." stats={[["Vues de fiches", "12 480", "+21 %"], ["Conversion", "5,2 %", "+0,8 %"], ["Durée moyenne", "3,4 nuits", "Stable"]]} />; }
