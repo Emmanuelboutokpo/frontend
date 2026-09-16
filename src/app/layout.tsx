@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Plus_Jakarta_Sans, Playfair_Display } from "next/font/google";
 
 // CSS is loaded for its side effects; Next.js handles it at build time.
-// @ts-expect-error The stylesheet is resolved by Next.js, not TypeScript.
 
 import "./globals.css";
 import Navbar from "@/components/front-office/Navbar";
