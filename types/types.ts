@@ -6,6 +6,8 @@
 // ---------------------------------------------------------------------
 // GÉOGRAPHIE
 // ---------------------------------------------------------------------
+import { Wifi, Waves, Snowflake, Check, ShieldCheck } from "lucide-react";
+
 export interface Country {
   id: number;
   name: string;
@@ -81,6 +83,23 @@ export interface Category {
   has_subcategories: boolean;
   description: string;
 }
+
+export interface EstablishmentCardProps {
+  establishment: Establishment;
+  coverPhoto?: Photo;
+  categorySlug: string;
+  subcategorySlug?: string;
+  typeName: string;
+  location: string;
+}
+
+export const amenityIconMap: Record<string, any> = {
+  wifi: Wifi,
+  climatisation: Snowflake,
+  piscine: Waves,
+  securite: ShieldCheck,
+  default: Check,
+};
 
 export interface SubCategory {
   id: number;

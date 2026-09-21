@@ -1,10 +1,53 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "leaflet/dist/leaflet.css";
 
 @custom-variant dark (&:is(.dark *));
 
 .font-display {
   font-family: var(--font-playfair), Georgia, serif;
+}
+
+.custom-price-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.lr-popup .leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.lr-popup .leaflet-popup-content {
+  margin: 0;
+  padding: 0;
+}
+
+.lr-popup .leaflet-popup-tip {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.leaflet-container {
+  z-index: 0;
+  font-family: inherit;
+}
+
+.leaflet-pane {
+  z-index: 400 !important;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 1000 !important;
 }
 
 /* Scrollbar personnalisé */
@@ -22,6 +65,38 @@
   background: #9fbeaf;
 }
 
+/* ===== Scrollbar personnalisée (fine, discrète) ===== */
+.lr-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lr-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.lr-scrollbar::-webkit-scrollbar-thumb {
+  background: #d1d5db; /* gray-300 */
+  border-radius: 999px;
+}
+
+.lr-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af; /* gray-400 */
+}
+
+/* Firefox */
+.lr-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
+/* ===== Masquer la scrollbar (utile pour l'onglet catégories mobile) ===== */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -153,6 +228,66 @@
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+}
+
+/* Fix marqueur prix Leaflet */
+
+.custom-price-marker-detail {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Popup Leaflet stylée */
+.lr-popup .leaflet-popup-content-wrapper {
+  border-radius: 14px;
+  padding: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e2e8f0;
+}
+
+.lr-popup .leaflet-popup-content {
+  margin: 0;
+  padding: 0;
+  width: auto !important;
+  font-family: inherit;
+}
+
+.lr-popup .leaflet-popup-tip {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.leaflet-text {
+    color: #ffff;
+}
+
+.lr-popup .leaflet-popup-close-button {
+  top: 8px !important;
+  right: 8px !important;
+  width: 22px !important;
+  height: 22px !important;
+  font-size: 18px !important;
+  color: #64748b !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 50% !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.lr-popup .leaflet-popup-close-button:hover {
+  background: white !important;
+  color: #0f172a !important;
+}
+
+/* Fix z-index Leaflet */
+.leaflet-container {
+  z-index: 0;
+  font-family: inherit;
+}
+.leaflet-pane {
+  z-index: 400 !important;
+}
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 1000 !important;
 }
 
 @keyframes logo-spin {

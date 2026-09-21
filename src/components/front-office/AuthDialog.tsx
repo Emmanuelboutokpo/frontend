@@ -4,8 +4,8 @@ import { FormEvent, useState } from 'react'
 import { Facebook, LockKeyhole, Mail, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useAuthStore } from '../../../store/authStore'
-
+import { useAuthStore } from '@/store'
+ 
 type AuthDialogProps = {
     open: boolean
     onOpenChange: (open: boolean) => void

@@ -6,6 +6,6 @@ import { useEffect } from "react";
 export default function Home() {
   const router = useRouter();
   useEffect(() => {
-    router.push("/pages/front-office/");
+    router.push("/pages/");
   }, []);
 }
