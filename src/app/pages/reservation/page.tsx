@@ -94,14 +94,14 @@ export default function Reservation() {
 
     const handleSearchSubmit = () => {
         if (destinationInput.trim()) {
-            router.push(`/pages/front-office/explorer?keyword=${encodeURIComponent(destinationInput.trim())}`)
+            router.push(`/pages/explorer?keyword=${encodeURIComponent(destinationInput.trim())}`)
         } else {
-            router.push('/pages/front-office/explorer')
+            router.push('/pages/explorer')
         }
     }
 
     return (
-        <main className="min-h-screen bg-[#f5fbf7] text-slate-900">
+        <main className="min-h-screen bg-[#ffff] text-slate-900">
             <TravelBanner />
 
             {/* BARRE DE RECHERCHE PRINCIPALE */}
@@ -125,7 +125,7 @@ export default function Reservation() {
                         </label>
                         <div className="hidden h-8 w-px bg-slate-200 sm:block" />
                         <Link
-                            href="/pages/front-office/explorer"
+                            href="/pages/explorer"
                             className="flex items-center gap-3 rounded-2xl px-4 py-2 text-left hover:bg-slate-50 sm:rounded-full"
                         >
                             <CalendarDays className="h-5 w-5 text-slate-400" />
@@ -138,7 +138,7 @@ export default function Reservation() {
                         </Link>
                         <div className="hidden h-8 w-px bg-slate-200 sm:block" />
                         <Link
-                            href="/pages/front-office/explorer"
+                            href="/pages/explorer"
                             className="flex items-center gap-3 rounded-2xl px-4 py-2 text-left hover:bg-slate-50 sm:rounded-full"
                         >
                             <Sparkles className="h-5 w-5 text-slate-400" />
@@ -210,7 +210,7 @@ export default function Reservation() {
                         return (
                             <Link
                                 key={category.id}
-                                href={`/pages/front-office/${category.slug}`}
+                                href={`/pages/${category.slug}`}
                                 className="group rounded-2xl border border-slate-100 bg-white p-5 text-center shadow-sm transition hover:-translate-y-1 hover:shadow-md"
                             >
                                 <div
@@ -250,7 +250,7 @@ export default function Reservation() {
                         variant="outline"
                         className="hidden rounded-full sm:flex"
                     >
-                        <Link href="/pages/front-office/explorer">
+                        <Link href="/pages/explorer">
                             Tout découvrir <ArrowRight className="ml-2 h-4 w-4" />
                         </Link>
                     </Button>
@@ -268,7 +268,7 @@ export default function Reservation() {
                         const location = formatLocation(data, est) || est.address
                         const price = est.price_per_night ?? est.price_per_month ?? 0
                         const subPath = subcategory?.slug ? `/${subcategory.slug}` : ''
-                        const detailUrl = `/pages/front-office/${category?.slug ?? 'hebergement'}${subPath}/${est.slug}`
+                        const detailUrl = `/pages/${category?.slug ?? 'hebergement'}${subPath}/${est.slug}`
 
                         return (
                             <Card
@@ -386,7 +386,7 @@ export default function Reservation() {
                                     (sc) => sc.id === est.subcategory_id
                                 )
                                 const subPath = subcategory?.slug ? `/${subcategory.slug}` : ''
-                                const detailUrl = `/pages/front-office/${category?.slug ?? 'hebergement'}${subPath}/${est.slug}`
+                                const detailUrl = `/pages/${category?.slug ?? 'hebergement'}${subPath}/${est.slug}`
 
                                 return (
                                     <Link

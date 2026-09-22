@@ -94,7 +94,7 @@ function PropertyShowcase({ property, photo, typeName, location, subcategorySlug
         <CardContent className="relative z-0 p-3">
           <div className="flex flex-1 flex-col justify-between p-3.5">
                   <div>
-                    <h3 className="mb-1 block font-semibold text-slate-900 transition hover:text-emerald-700 line-clamp-1 text-sm font-bold">{property.name}</h3>
+                    <h3 className="mb-1 block text-slate-900 transition hover:text-emerald-700 line-clamp-1 text-sm font-bold">{property.name}</h3>
                     <p className="mb-2.5 flex items-center gap-1 text-[11px] text-muted-foreground">
                       <MapPin className="h-3 w-3 shrink-0 text-emerald-600" />
                       <span className="truncate">{location}</span>
