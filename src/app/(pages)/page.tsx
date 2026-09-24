@@ -60,7 +60,7 @@ export default function Home() {
     setSearchQuery({
       categoryId: category.id,
     });
-    router.push(`/pages/explorer`);
+    router.push(`/explorer`);
   };
 
   const handleCategoryMoodClick = (
@@ -77,7 +77,7 @@ export default function Home() {
     });
 
     // 3. Naviguer vers explorer avec le paramètre d'URL
-    router.push(`/pages/explorer`);
+    router.push(`/explorer`);
   };
 
   return <div className="overflow-hidden bg-white text-slate-900">
@@ -108,7 +108,7 @@ export default function Home() {
           const accent = categoryAccents[index];
           const Icon = accent.icon;
           const image = photos[approved.find((property) => property.category_id === category.id)?.id ?? -1];
-          return <Link key={category.id} href={`/pages/explorer`} onClick={(e) => handleCategoryClick(e, category)} className="group relative h-56 sm:h-64 overflow-hidden rounded-2xl bg-[#09234a] shadow-sm transition hover:-translate-y-1 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f6ad2e]">
+          return <Link key={category.id} href={`/explorer`} onClick={(e) => handleCategoryClick(e, category)} className="group relative h-56 sm:h-64 overflow-hidden rounded-2xl bg-[#09234a] shadow-sm transition hover:-translate-y-1 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f6ad2e]">
             {image && <img src={image.url} alt="" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" />}
             <div className="absolute inset-0 bg-gradient-to-t from-[#061c38]/85 via-[#061c38]/10 to-transparent" />
             <div className="absolute inset-x-3 bottom-3 flex items-center gap-3 rounded-xl bg-white p-3 shadow-lg">
@@ -137,7 +137,7 @@ export default function Home() {
       <SectionHeading
         title="Les endroits populaires"
         description="Découvrez les établissements les plus appréciés dans votre destination."
-        href="/pages/explorer"
+        href="/explorer"
       />
       <p className=" lg:hidden mb-3 text-sm text-slate-500">
         Découvrez les établissements les plus appréciés dans votre destination.
@@ -182,7 +182,7 @@ export default function Home() {
         {moods.map((mood) => {
           const Icon = mood.icon;
           const category = mood.href
-          return <Link key={mood.label} href={`/pages/explorer`} onClick={(e) => handleCategoryMoodClick(e, category)} className="group flex min-h-28 flex-col hover:text-emerald-500 items-center justify-center rounded-2xl border border-slate-200 bg-white px-2 text-center shadow-sm transition hover:-translate-y-1 hover:border-emerald-500 hover:shadow-md">
+          return <Link key={mood.label} href={`/explorer`} onClick={(e) => handleCategoryMoodClick(e, category)} className="group flex min-h-28 flex-col hover:text-emerald-500 items-center justify-center rounded-2xl border border-slate-200 bg-white px-2 text-center shadow-sm transition hover:-translate-y-1 hover:border-emerald-500 hover:shadow-md">
             <span className={`grid h-11 w-11 place-items-center rounded-full ${mood.color}`}>
               <Icon className="h-5 w-5" />
             </span>
@@ -195,7 +195,7 @@ export default function Home() {
     </section>
 
     <section className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-12">
-      <SectionHeading title="Près de vous" description="Découvrez les meilleures adresses autour de vous." href="/pages/explorer" />
+      <SectionHeading title="Près de vous" description="Découvrez les meilleures adresses autour de vous." href="/explorer" />
       <p className=" lg:hidden mb-3 text-sm text-slate-500">
         Découvrez les meilleures adresses autour de vous.
       </p>

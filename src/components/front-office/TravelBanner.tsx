@@ -37,9 +37,9 @@ export function TravelBanner() {
 
     const handleSearch = () => {
         if (destination.trim()) {
-            router.push(`/pages/front-office/explorer?keyword=${encodeURIComponent(destination.trim())}`)
+            router.push(`/explorer?keyword=${encodeURIComponent(destination.trim())}`)
         } else {
-            router.push('/pages/front-office/explorer')
+            router.push('/explorer')
         }
     }
 
@@ -76,7 +76,7 @@ export function TravelBanner() {
                                         </label>
                                         <div className="hidden h-8 w-px bg-slate-200 sm:block" />
                                         <Link
-                                            href="/pages/front-office/explorer"
+                                            href="/explorer"
                                             className="flex items-center gap-3 rounded-2xl px-4 py-2 text-left hover:bg-slate-50 sm:rounded-full"
                                         >
                                             <CalendarDays className="h-5 w-5 text-slate-400" />
@@ -89,7 +89,7 @@ export function TravelBanner() {
                                         </Link>
                                         <div className="hidden h-8 w-px bg-slate-200 sm:block" />
                                         <Link
-                                            href="/pages/front-office/explorer"
+                                            href="/explorer"
                                             className="flex items-center gap-3 rounded-2xl px-4 py-2 text-left hover:bg-slate-50 sm:rounded-full"
                                         >
                                             <Sparkles className="h-5 w-5 text-slate-400" />

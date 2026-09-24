@@ -181,7 +181,7 @@ const ABOUT_CTA = {
               asChild
               className="rounded-full bg-emerald-700 px-6 hover:bg-emerald-800"
             >
-              <Link href="/pages/explorer">
+              <Link href="/explorer">
                 Explorer maintenant
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
@@ -191,7 +191,7 @@ const ABOUT_CTA = {
               variant="outline"
               className="rounded-full border-white/30 bg-white/10 text-white backdrop-blur hover:bg-white/20"
             >
-              <Link href="/pages/contact">Nous contacter</Link>
+              <Link href="/contact">Nous contacter</Link>
             </Button>
           </div>
         </div>
@@ -360,51 +360,7 @@ const ABOUT_CTA = {
         </div>
       </div>
     </section>
-      {/* <section className="mx-auto max-w-7xl px-4 py-16 lg:py-20">
-      <div className="mb-10 text-center">
-        <span className="mb-3 inline-block rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
-          Notre équipe
-        </span>
-        <h2 className="text-2xl font-bold lg:text-4xl">
-          Des passionnés au service des voyageurs
-        </h2>
-        <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground lg:text-base">
-          Une équipe jeune, engagée et à l'écoute du marché africain.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {ABOUT_TEAM.map((member) => (
-          <div
-            key={member.id}
-            className="group flex flex-col items-center rounded-2xl border bg-card p-6 text-center transition hover:-translate-y-1 hover:shadow-lg"
-          >
-            <div className="relative mb-4 h-24 w-24 overflow-hidden rounded-full ring-2 ring-emerald-100 transition group-hover:ring-emerald-300 lg:h-28 lg:w-28">
-              <Image
-                src={member.avatar}
-                alt={member.name}
-                fill
-                className="object-cover"
-                sizes="112px"
-              />
-            </div>
-            <h3 className="text-sm font-semibold lg:text-base">
-              {member.name}
-            </h3>
-            <p className="mt-0.5 text-xs text-muted-foreground lg:text-sm">
-              {member.role}
-            </p>
-            <a
-              href={member.linkedin}
-              className="mt-3 flex h-8 w-8 items-center justify-center rounded-full border text-muted-foreground transition hover:border-emerald-700 hover:bg-emerald-50 hover:text-emerald-700"
-              aria-label={`LinkedIn de ${member.name}`}
-            >
-              <Linkedin className="h-3.5 w-3.5" />
-            </a>
-          </div>
-        ))}
-      </div>
-    </section> */}
+     
     <section className="mx-auto max-w-7xl px-4 pb-20">
       <div className="relative overflow-hidden rounded-3xl bg-emerald-800 px-6 py-14 text-center text-white lg:px-16 lg:py-20">
         {/* Motif décoratif */}

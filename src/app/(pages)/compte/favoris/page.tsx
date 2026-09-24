@@ -30,7 +30,7 @@ const FavoritesPage = () => {
     return (
         <main className="min-h-screen bg-[#f5fbf7] pb-20 text-slate-900">
             <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-12">
-                <Link href="/pages/front-office" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-emerald-700"><ArrowLeft className="h-4 w-4" />Retour à l&apos;accueil</Link>
+                <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-emerald-700"><ArrowLeft className="h-4 w-4" />Retour à l&apos;accueil</Link>
                 <header className="mt-7 flex flex-col justify-between gap-4 border-b border-slate-200 pb-7 sm:flex-row sm:items-end">
                     <div>
                         <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-emerald-700"><Heart className="h-4 w-4 fill-current" />Votre sélection</p>
@@ -59,7 +59,7 @@ const FavoritesPage = () => {
                                 Explorez nos établissements et appuyez sur le cœur pour enregistrer vos adresses préférées.
                             </p>
                             <Button asChild className="mt-7 rounded-full bg-emerald-700 hover:bg-emerald-800">
-                                <Link href="/pages/front-office">Explorer les établissements</Link>
+                                <Link href="/explorer">Explorer les établissements</Link>
                             </Button>
                         </div> :
                         <div className="mt-9 space-y-12">

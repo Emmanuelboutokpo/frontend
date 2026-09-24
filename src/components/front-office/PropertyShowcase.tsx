@@ -56,7 +56,7 @@ function formatPrice(property: Establishment) {
 function propertyHref(property: Establishment, subcategorySlugs: Record<number, string>) {
   const categoryPath = categoryPaths[property.category_id] ?? 'hebergement'
   const subcategoryPath = property.subcategory_id ? `/${subcategorySlugs[property.subcategory_id]}` : ''
-  return `/pages/${categoryPath}${subcategoryPath}/${property.slug}`
+  return `/${categoryPath}${subcategoryPath}/${property.slug}`
 }
 
 function PropertyShowcase({ property, photo, typeName, location, subcategorySlugs }: { property: Establishment; photo?: Photo; subcategorySlugs: Record<number, string> ;  typeName: string; location: string;}) {

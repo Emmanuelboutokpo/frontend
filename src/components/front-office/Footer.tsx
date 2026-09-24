@@ -2,10 +2,10 @@ import Link from 'next/link'
 import { Facebook, Globe2, Instagram, Mail, MapPin, Phone, Youtube } from 'lucide-react'
 
 const navigation = [
-  { label: 'Accueil', href: '/pages/' },
-  { label: 'Explorer', href: '/pages/explorer' },
-  { label: 'À propos', href: '/pages/about' },
-  { label: 'Contact', href: '/pages/contact' },
+  { label: 'Accueil', href: '/' },
+  { label: 'Explorer', href: '/explorer' },
+  { label: 'À propos', href: '/about' },
+  { label: 'Contact', href: '/contact' },
 ]
 
 export default function Footer() {
@@ -14,7 +14,7 @@ export default function Footer() {
     <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-12 lg:py-14">
       <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.35fr_0.8fr_0.9fr_1fr]">
         <div>
-          <Link href="/pages" className="flex shrink-0 items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0a7692] focus-visible:ring-offset-2">
+          <Link href="/" className="flex shrink-0 items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0a7692] focus-visible:ring-offset-2">
            <img src="/images/bestreservlogo.png" alt="BestReserv" className="h-13 w-auto object-contain sm:h-11" />
           </Link>
           <p className="mt-5 max-w-xs text-sm leading-6 text-white/70">La plateforme de référence pour découvrir et réserver les meilleures adresses au Bénin.</p>

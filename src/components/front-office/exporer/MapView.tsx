@@ -134,7 +134,7 @@ export function MapView() {
           );
           const categorySlug = category?.slug ?? "hebergement";
           const subPath = subcategory?.slug ? `/${subcategory.slug}` : "";
-          const detailUrl = `/pages/front-office/${categorySlug}${subPath}/${est.slug}`;
+          const detailUrl = `/${categorySlug}${subPath}/${est.slug}`;
 
           return (
             <Marker

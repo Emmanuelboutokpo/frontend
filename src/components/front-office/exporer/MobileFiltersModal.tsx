@@ -51,11 +51,6 @@ export function MobileFiltersModal({ open, onOpenChange }: Props) {
               onClick={() => onOpenChange(false)}
             >
               Afficher les résultats
-              {/* {activeFiltersCount > 0 && (
-                <span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 text-xs">
-                  {activeFiltersCount}
-                </span>
-              )} */}
             </Button>
           </div>
         </div>

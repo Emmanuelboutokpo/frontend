@@ -140,7 +140,7 @@ export default function PropertyDetail({ slug }: PropertyDetailProps) {
       <main className="mx-auto max-w-3xl px-4 py-24 text-center">
         <h1 className="text-2xl font-bold">Établissement introuvable</h1>
         <Button asChild className="mt-6 rounded-full bg-emerald-700">
-          <Link href="/pages/">Retour à l'accueil</Link>
+          <Link href="/">Retour à l'accueil</Link>
         </Button>
       </main>
     );
@@ -250,7 +250,7 @@ export default function PropertyDetail({ slug }: PropertyDetailProps) {
         {/* ============================================================ */}
         <div className="flex items-center justify-between gap-4">
           <Link
-            href="/pages/"
+            href="/"
             className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition hover:text-emerald-700"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -540,7 +540,7 @@ export default function PropertyDetail({ slug }: PropertyDetailProps) {
   reviewCount={reviews.length}
   typeName={subcategory?.name ?? category?.name}
   coverUrl={photos[0]?.url}
-  detailUrl={`/pages/${category?.slug ?? "hebergement"}${
+  detailUrl={`/${category?.slug ?? "hebergement"}${
     subcategory?.slug ? `/${subcategory.slug}` : ""
   }/${property.slug}`}
 />
@@ -703,7 +703,7 @@ export default function PropertyDetail({ slug }: PropertyDetailProps) {
                 className="mt-5 h-12 w-full rounded-xl bg-emerald-700 font-semibold hover:bg-emerald-800"
               >
                 <Link
-                  href={`/pages/reservation/${property.id}?${reservationParams.toString()}`}
+                  href={`/reservation/${property.id}?${reservationParams.toString()}`}
                   onClick={handleReserveClick}
                 >
                   <CalendarDays className="mr-2 h-4 w-4" />
@@ -831,7 +831,7 @@ export default function PropertyDetail({ slug }: PropertyDetailProps) {
         onAuthenticated={() => {
           if (pendingAction === "favorite") toggleFavorite(property.id);
           if (pendingAction === "reserve")
-            window.location.href = `/pages/reservation/${property.id}?${reservationParams.toString()}`;
+            window.location.href = `/reservation/${property.id}?${reservationParams.toString()}`;
           setPendingAction(null);
         }}
         title="Connectez-vous pour continuer"

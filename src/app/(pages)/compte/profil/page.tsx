@@ -130,7 +130,7 @@ export default function ProfilePage() {
         {/* RETOUR                                                       */}
         {/* ============================================================ */}
         <Link
-          href="/pages"
+          href="/"
           className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-emerald-700"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -268,7 +268,7 @@ export default function ProfilePage() {
                     asChild
                     className="mt-4 rounded-full bg-emerald-700 hover:bg-emerald-800"
                   >
-                    <Link href="/pages/explorer">Explorer les établissements</Link>
+                    <Link href="/explorer">Explorer les établissements</Link>
                   </Button>
                 </div>
               ) : (
@@ -303,7 +303,7 @@ export default function ProfilePage() {
                     asChild
                     className="mt-4 rounded-full bg-emerald-700 hover:bg-emerald-800"
                   >
-                    <Link href="/pages/explorer">Explorer</Link>
+                    <Link href="/explorer">Explorer</Link>
                   </Button>
                 </div>
               ) : (
