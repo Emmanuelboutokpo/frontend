@@ -1,38 +1,24 @@
 "use client"
-import dynamic from "next/dynamic";
-
+ 
 import { useState } from "react"
-import Link from "next/link"
 import {
-  Menu,
-  X,
+ 
   Sparkles,
   Mail,
   Phone,
   MapPin,
   MessageCircle,
-  Clock3,
+ 
   Send,
   ChevronDown,
-  Instagram,
-  Facebook,
-  Linkedin,
-  ArrowRight,
+ 
   CheckCircle2,
-  ExternalLink,
-  HelpCircle,
+   HelpCircle,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
-
+  
 import {
   Select,
   SelectContent,

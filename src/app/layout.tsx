@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Plus_Jakarta_Sans, Playfair_Display } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/front-office/Navbar";
-import Footer from "@/components/front-office/Footer";
- 
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -40,12 +38,10 @@ export default function RootLayout({
       <body
         className={`flex min-h-screen flex-col ${jakarta.variable} ${playfair.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
       > 
-         <Navbar />
-          <main className="flex-1 pb-20 lg:pb-0">
+       <main className="flex-1 pb-20 lg:pb-0">
         {children}
-      </main>
-        <Footer />
-       </body>
+       </main>
+      </body>
     </html>
   );
 }

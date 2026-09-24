@@ -8,14 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import AuthDialog from '@/components/front-office/AuthDialog'
- import { ArrowDownUp, CalendarDays, ChevronDown, Heart, LogOut, Menu, UserRound, X } from 'lucide-react'
+ import { CalendarDays, Heart, LogOut, Menu, UserRound, X } from 'lucide-react'
 import { useAuthStore } from '@/store'
 
 const navItems = [
-  { name: 'Accueil', href: '/pages' },
-  { name: 'Explorer', href: '/pages/explorer' },
-  { name: 'À propos', href: '/pages/about' },
-  { name: 'Contact', href: '/pages/contact' },
+  { name: 'Accueil', href: '/' },
+  { name: 'Explorer', href: '/explorer' },
+  { name: 'À propos', href: '/about' },
+  { name: 'Contact', href: '/contact' },
 ]
 
 
@@ -46,18 +46,18 @@ function AccountButton() {
         {firstName} {lastName}
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
-      <DropdownMenuItem onSelect={() => router.push('/pages/compte/reservations')}>
+      <DropdownMenuItem onSelect={() => router.push('/compte/reservations')}>
         <CalendarDays className="h-4 w-4" />
         Mes réservations
       </DropdownMenuItem>
-      <DropdownMenuItem onSelect={() => router.push('/pages/compte/favoris')}>
+      <DropdownMenuItem onSelect={() => router.push('/compte/favoris')}>
         <Heart className="h-4 w-4" />
         Mes Favoris
       </DropdownMenuItem>
-      <DropdownMenuItem onSelect={() => router.push('/pages/compte/profil')}>
+      <DropdownMenuItem onSelect={() => router.push('/compte/profil')}>
         <UserRound className="h-4 w-4" />Mon profil</DropdownMenuItem>
       <DropdownMenuSeparator />
-      <DropdownMenuItem variant="destructive" onSelect={() => { signOut(); router.push('/pages/front-office') }}>
+      <DropdownMenuItem variant="destructive" onSelect={() => { signOut(); router.push('/') }}>
         <LogOut className="h-4 w-4" />Déconnexion
       </DropdownMenuItem>
     </DropdownMenuContent>
@@ -67,11 +67,11 @@ function AccountButton() {
 export default function Navbar() {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const isActive = (href: string) => href === '/pages' ? pathname === href : pathname.startsWith(href)
+  const isActive = (href: string) => href === '/' ? pathname === href : pathname.startsWith(href)
 
   return <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/95 backdrop-blur-md">
     <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between gap-5 px-5 sm:px-8 lg:px-16">
-      <Link href="/pages" className="flex shrink-0 items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0a7692] focus-visible:ring-offset-2">
+      <Link href="/" className="flex shrink-0 items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0a7692] focus-visible:ring-offset-2">
         <img src="/images/bestreservlogo.png" alt="BestReserv" className="h-13 w-auto object-contain sm:h-11" />
       </Link>
       <nav className="hidden items-center gap-6 lg:flex">
@@ -102,7 +102,7 @@ export default function Navbar() {
           <SheetContent side="right" className="w-[min(22rem,90vw)] p-0">
             <SheetHeader className="flex h-[68px] flex-row items-center justify-between border-b border-slate-100 px-5 text-left">
               <SheetTitle>
-                <Link href="/pages" onClick={() => setMobileOpen(false)}>
+                <Link href="/" onClick={() => setMobileOpen(false)}>
                   <img src="/images/bestreservlogo.png" alt="BestReserv" className="h-9 w-auto" />
                 </Link>
               </SheetTitle>
