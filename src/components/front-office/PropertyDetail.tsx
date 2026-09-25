@@ -243,7 +243,7 @@ export default function PropertyDetail({ slug }: PropertyDetailProps) {
   // RENDER
   // =====================================================================
   return (
-    <main className="min-h-screen bg-[#fffff] pb-20 text-slate-900">
+    <main className="min-h-screen bg-[#fffff] pb-4 text-slate-900">
       <div className="mx-auto max-w-7xl px-4 pt-5 sm:px-6 lg:px-12">
         {/* ============================================================ */}
         {/* HEADER : Retour + Favori + CTA mobile                        */}
@@ -610,94 +610,10 @@ export default function PropertyDetail({ slug }: PropertyDetailProps) {
                 <p className="text-sm text-slate-500">par nuit</p>
               )}
 
-              {/* Sélecteur de dates */}
-              <div className="mt-5 overflow-hidden rounded-xl border border-slate-300">
-                <div className="grid grid-cols-2 divide-x divide-slate-200">
-                  <button
-                    type="button"
-                    onClick={() => setCalendarTarget("checkIn")}
-                    className="p-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:bg-slate-50"
-                  >
-                    Arrivée
-                    <span className="mt-1 block text-sm font-semibold normal-case tracking-normal text-slate-800">
-                      {checkIn
-                        ? new Date(`${checkIn}T00:00:00`).toLocaleDateString(
-                            "fr-FR"
-                          )
-                        : "Ajouter une date"}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCalendarTarget("checkOut")}
-                    className="p-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:bg-slate-50"
-                  >
-                    Départ
-                    <span className="mt-1 block text-sm font-semibold normal-case tracking-normal text-slate-800">
-                      {checkOut
-                        ? new Date(`${checkOut}T00:00:00`).toLocaleDateString(
-                            "fr-FR"
-                          )
-                        : "Ajouter une date"}
-                    </span>
-                  </button>
-                </div>
-
-                {/* Voyageurs */}
-                <div className="border-t border-slate-200 p-3">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                    Voyageurs
-                  </p>
-                  <Select
-                    value={String(guests)}
-                    onValueChange={(value) => setGuests(Number(value))}
-                  >
-                    <SelectTrigger className="mt-1 h-auto w-full border-0 bg-transparent px-0 text-sm font-semibold shadow-none focus:ring-0">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.from(
-                        { length: Math.max(1, property.max_guests) },
-                        (_, index) => (
-                          <SelectItem key={index + 1} value={String(index + 1)}>
-                            {index + 1} voyageur{index > 0 ? "s" : ""}
-                          </SelectItem>
-                        )
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Détail du prix */}
-              {checkIn && checkOut && nights > 0 && (
-                <div className="mt-5 space-y-2 border-t pt-4 text-sm">
-                  <div className="flex justify-between text-slate-600">
-                    <span>
-                      {property.price_per_night?.toLocaleString("fr-FR")}{" "}
-                      {property.currency} × {nights} nuit
-                      {nights > 1 ? "s" : ""}
-                    </span>
-                    <span>
-                      {totalAmount.toLocaleString("fr-FR")} {property.currency}
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-t pt-3 text-base font-bold">
-                    <span>Total</span>
-                    <span>
-                      {totalAmount.toLocaleString("fr-FR")} {property.currency}
-                    </span>
-                  </div>
-                </div>
-              )}
-
               {/* Bouton Réserver */}
               <Button
                 asChild
                 disabled={
-                  !checkIn ||
-                  !checkOut ||
-                  nights < 1 ||
                   property.availability_status !== "AVAILABLE"
                 }
                 className="mt-5 h-12 w-full rounded-xl bg-emerald-700 font-semibold hover:bg-emerald-800"

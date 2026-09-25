@@ -20,7 +20,7 @@ export default function UserSettingsPage() {
             iconBg="bg-emerald-50 text-emerald-700"
             title="Informations personnelles"
             description="Gérez vos informations de profil"
-            href="/profile"
+            href="/users/profil"
           />
           <SettingRow
             icon={Lock}
@@ -51,7 +51,7 @@ export default function UserSettingsPage() {
             iconBg="bg-rose-50 text-rose-700"
             title="Notifications"
             description="Gérez vos préférences de notifications"
-            href="/notifications"
+            href="/users/notifications"
           />
         </SettingGroup>
 

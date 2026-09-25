@@ -29,7 +29,7 @@ export function UserTopbar({ onMenuClick }: { onMenuClick: () => void }) {
       <div className="flex flex-1 items-center justify-end gap-2 md:flex-none">
         {/* Notifications */}
         <Button variant="ghost" size="icon" asChild className="relative">
-          <Link href="/notifications">
+          <Link href="/users/notifications">
             <Bell className="h-5 w-5" />
             <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500" />
           </Link>
@@ -37,7 +37,7 @@ export function UserTopbar({ onMenuClick }: { onMenuClick: () => void }) {
 
         {/* Profil */}
         <Link
-          href="/profile"
+          href="/users/profil"
           className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-1.5 transition hover:border-emerald-200 hover:bg-emerald-50"
         >
           <div className="grid h-8 w-8 place-items-center rounded-full bg-emerald-700 text-xs font-bold text-white">

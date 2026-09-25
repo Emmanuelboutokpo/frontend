@@ -99,7 +99,7 @@ export default function UserFavoritesPage() {
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {/* Header */}
         <Link
-          href="/users/dashboard"
+          href="/users/"
           className="mb-4 inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-emerald-700"
         >
           <ArrowLeft className="h-3 w-3" />
