@@ -46,16 +46,8 @@ function AccountButton() {
         {firstName} {lastName}
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
-      <DropdownMenuItem onSelect={() => router.push('/compte/reservations')}>
-        <CalendarDays className="h-4 w-4" />
-        Mes réservations
-      </DropdownMenuItem>
-      <DropdownMenuItem onSelect={() => router.push('/compte/favoris')}>
-        <Heart className="h-4 w-4" />
-        Mes Favoris
-      </DropdownMenuItem>
-      <DropdownMenuItem onSelect={() => router.push('/compte/profil')}>
-        <UserRound className="h-4 w-4" />Mon profil</DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => router.push('/users/')}>
+        <UserRound className="h-4 w-4" />Mon espace client</DropdownMenuItem>
       <DropdownMenuSeparator />
       <DropdownMenuItem variant="destructive" onSelect={() => { signOut(); router.push('/') }}>
         <LogOut className="h-4 w-4" />Déconnexion

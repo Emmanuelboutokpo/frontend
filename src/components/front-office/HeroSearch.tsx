@@ -105,7 +105,7 @@ function HeroSearch({destinations,}: { destinations: string[]}) {
       guests: Number.parseInt(guestValue, 10) || 0,
     })
 
-    router.push("/pages/explorer")
+    router.push("/explorer")
   }
 
   return (

@@ -299,9 +299,13 @@ export const useTenants = (): Tenant[] => usePropertyStore((s) => s.data.Tenants
 export const useFavorites = (): number[] =>
   usePropertyStore((s) => s.favoriteIds);
 
+
+
 export const useFavoriteEstablishments = (): Establishment[] =>
-  usePropertyStore((s) =>
-    s.data.Establishments.filter((e) => s.favoriteIds.includes(e.id))
+  usePropertyStore(
+    useShallow((s) =>
+      s.data.Establishments.filter((e) => s.favoriteIds.includes(e.id))
+    )
   );
 
 // =====================================================================
