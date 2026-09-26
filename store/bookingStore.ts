@@ -4,7 +4,7 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
 export type BookingStatus = 'pending' | 'paid' | 'cancelled'
-export type PaymentProvider = 'fedapay' | 'kkpays'
+export type PaymentProvider = "fedapay" | "kkpays" | "stripe";
 
 export type Booking = {
     id: string

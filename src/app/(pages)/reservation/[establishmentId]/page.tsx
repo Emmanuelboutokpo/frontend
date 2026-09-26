@@ -11,7 +11,7 @@ import { usePropertyStore, useAuthStore, useBookingStore } from "@/store";
 import { ReservationStepper } from "@/components/front-office/reservation/ReservationStepper";
 import { Step1StayDetails } from "@/components/front-office/reservation/steps/Step2StayDetails";
 import { Step2ClientInfo } from "@/components/front-office/reservation/steps/Step3ClientInfo";
-import { Step3Payment } from "@/components/front-office/reservation/steps/Step4Payment";
+import { Step3Payment, type PaymentMethod } from "@/components/front-office/reservation/steps/Step4Payment";
 import { Step4Confirmation } from "@/components/front-office/reservation/steps/Step5Confirmation";
  
 interface Props {
@@ -34,6 +34,12 @@ export default function ReservationPage({ params }: Props) {
       email: s.email ?? "",
     }))
   );
+
+  const UI_TO_PROVIDER = {
+  card: "kkpays",       
+  mobile: "fedapay",   
+  transfer: "kkpays",   
+} as const;
 
   const establishmentId = Number(establishmentIdStr);
   const property = data.Establishments.find((e) => e.id === establishmentId);
@@ -97,6 +103,7 @@ export default function ReservationPage({ params }: Props) {
     await new Promise((r) => setTimeout(r, 1500));
 
     addBooking({
+      propertyId: property.id,
       propertyName: property.name,
       propertyAddress: property.address,
       checkIn,
@@ -106,12 +113,7 @@ export default function ReservationPage({ params }: Props) {
       amount: totalAmount,
       currency: property.currency,
       status: paymentMethod === "transfer" ? "pending" : "paid",
-      paymentProvider:
-        paymentMethod === "card"
-          ? "stripe"
-          : paymentMethod === "mobile"
-          ? "fedapay"
-          : "kkpays",
+      paymentProvider: UI_TO_PROVIDER[paymentMethod]
     });
 
     setIsSubmitting(false);
