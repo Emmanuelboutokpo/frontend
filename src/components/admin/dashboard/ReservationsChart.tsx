@@ -12,29 +12,25 @@ import {
 } from "recharts";
 
 import { DashboardSection } from "./DashboardSection";
+import { analyticsNumber, analyticsString, type AnalyticsRecord } from "@/store/useAdminAnalyticsStore";
 
-const data = [
-  { month: "Jan", value: 120 },
-  { month: "Fév", value: 180 },
-  { month: "Mar", value: 150 },
-  { month: "Avr", value: 220 },
-  { month: "Mai", value: 280 },
-  { month: "Juin", value: 240 },
-  { month: "Juil", value: 320 },
-  { month: "Août", value: 380 },
-  { month: "Sep", value: 356 },
-  { month: "Oct", value: 400 },
-  { month: "Nov", value: 420 },
-  { month: "Déc", value: 480 },
-];
+export function ReservationsChart({ rows, error }: { rows: AnalyticsRecord[]; error?: string }) {
+  const data = rows.flatMap((row) => {
+    const month = analyticsString(row, ["label", "month", "period", "date", "name"]);
+    const value = analyticsNumber(row, ["value", "count", "reservations", "total", "booking_count"]);
+    return month && value !== null ? [{ month, value }] : [];
+  });
 
-export function ReservationsChart() {
   return (
     <DashboardSection
       title="Évolution des réservations"
-      action={{ label: "12 derniers mois" }}
+      action={{ label: "Données réelles" }}
     >
-      <div className="h-64">
+      {error ? (
+        <p role="alert" className="rounded-lg bg-rose-50 p-3 text-xs text-rose-700">{error}</p>
+      ) : data.length === 0 ? (
+        <p className="flex h-64 items-center justify-center text-sm text-slate-400">Aucune donnée de réservation pour cette période.</p>
+      ) : <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
@@ -69,7 +65,7 @@ export function ReservationsChart() {
             />
           </LineChart>
         </ResponsiveContainer>
-      </div>
+      </div>}
     </DashboardSection>
   );
 }

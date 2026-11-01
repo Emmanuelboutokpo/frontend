@@ -1,6 +1,5 @@
 // =====================================================================
 // TYPES — LandReservation.com
-// Alignés sur le mock propertyData
 // =====================================================================
 
 // ---------------------------------------------------------------------
@@ -8,8 +7,11 @@
 // ---------------------------------------------------------------------
 import { Wifi, Waves, Snowflake, Check, ShieldCheck } from "lucide-react";
 
+// Mock records use numbers; the establishments API uses UUID strings.
+export type EntityId = number | string;
+
 export interface Country {
-  id: number;
+  id: EntityId;
   name: string;
   iso_code: string;
   lat: number;
@@ -17,8 +19,8 @@ export interface Country {
 }
 
 export interface Department {
-  id: number;
-  country_id: number;
+  id: EntityId;
+  country_id: EntityId;
   name: string;
   capital: string;
   lat: number;
@@ -26,8 +28,8 @@ export interface Department {
 }
 
 export interface Commune {
-  id: number;
-  department_id: number;
+  id: EntityId;
+  department_id: EntityId;
   name: string;
   type: "Urbaine" | "Rurale";
   lat: number;
@@ -35,16 +37,16 @@ export interface Commune {
 }
 
 export interface District {
-  id: number;
-  commune_id: number;
+  id: EntityId;
+  commune_id: EntityId;
   name: string;
   lat: number;
   lng: number;
 }
 
 export interface Locality {
-  id: number;
-  district_id: number;
+  id: EntityId;
+  district_id: EntityId;
   name: string;
   type: "Quartier" | "Village" | "Ville";
   lat: number;
@@ -55,7 +57,7 @@ export interface Locality {
 // ACTEURS
 // ---------------------------------------------------------------------
 export interface Owner {
-  id: number;
+  id: EntityId;
   name: string;
   phone: string;
   email?: string;
@@ -63,7 +65,7 @@ export interface Owner {
 }
 
 export interface Tenant {
-  id: number;
+  id: EntityId;
   name: string;
   phone: string;
   email?: string;
@@ -76,9 +78,9 @@ export interface Tenant {
 export type CategorySlug = "hebergement" | "restaurant" | "loisir";
 
 export interface Category {
-  id: number;
+  id: EntityId;
   name: string;
-  slug: CategorySlug;
+  slug: string;
   icon: string;
   has_subcategories: boolean;
   description: string;
@@ -102,8 +104,8 @@ export const amenityIconMap: Record<string, any> = {
 };
 
 export interface SubCategory {
-  id: number;
-  category_id: number;
+  id: EntityId;
+  category_id: EntityId;
   name: string;
   slug: string;
   icon: string;
@@ -113,14 +115,14 @@ export interface SubCategory {
 // RÉFÉRENTIELS
 // ---------------------------------------------------------------------
 export interface Amenity {
-  id: number;
+  id: EntityId;
   name: string;
   slug: string;
   icon: string;
 }
 
 export interface PaymentCondition {
-  id: number;
+  id: EntityId;
   name: string;
 }
 
@@ -140,11 +142,13 @@ export interface RatingsDetail {
 }
 
 export interface Establishment {
-  id: number;
-  category_id: number;
-  subcategory_id: number | null; // null pour Restaurant
-  owner_id: number;
-  tenant_id: number | null;
+  id: EntityId;
+  category_id: EntityId;
+  subcategory_id: EntityId | null; // null pour Restaurant
+  category?: Category;
+  subcategory?: SubCategory;
+  owner_id: EntityId;
+  tenant_id: EntityId | null;
 
   name: string;
   slug: string;
@@ -152,11 +156,13 @@ export interface Establishment {
   address: string;
 
   // Géographie
-  country_id: number;
-  department_id: number;
-  commune_id: number;
-  district_id: number;
-  locality_id: number;
+  location_id?: EntityId;
+  location_name?: string;
+  country_id: EntityId;
+  department_id: EntityId;
+  commune_id: EntityId;
+  district_id: EntityId;
+  locality_id: EntityId;
   lat: number;
   lng: number;
 
@@ -165,12 +171,21 @@ export interface Establishment {
   availability_status: AvailabilityStatus;
 
   // Prix
+  price?: number;
+  price_unit?: string;
   price_per_night: number | null;
   price_per_month: number | null;
   currency: string;
+  owner?: {
+    first_name: string;
+    last_name: string;
+    avatar_url?: string | null;
+  } | null;
+  payment_conditions?: PaymentCondition[];
 
   // Caractéristiques
   bedrooms: number;
+  rooms_count?: number;
   bathrooms: number;
   beds: number;
   bed_type: string | null;
@@ -179,6 +194,7 @@ export interface Establishment {
 
   // Évaluation
   rating: number;
+  review_count?: number;
   ratings_detail: RatingsDetail;
 
   // Dates
@@ -186,15 +202,15 @@ export interface Establishment {
   updated_at: string;
 
   // Relations (IDs)
-  amenity_ids: number[];
-  payment_condition_ids: number[];
-  photo_ids: number[];
-  video_ids: number[];
-  review_ids: number[];
+  amenity_ids: EntityId[];
+  payment_condition_ids: EntityId[];
+  photo_ids: EntityId[];
+  video_ids: EntityId[];
+  review_ids: EntityId[];
 
   // Champs spécifiques restaurant / loisir
   cuisine_type?: string;
-  opening_hours?: string;
+  opening_hours?: string | Record<string, unknown> | null;
   phone?: string | null;
 }
 
@@ -202,8 +218,8 @@ export interface Establishment {
 // MÉDIAS
 // ---------------------------------------------------------------------
 export interface Photo {
-  id: number;
-  establishment_id: number;
+  id: EntityId;
+  establishment_id: EntityId;
   url: string;
   width_ratio: number;
   height_ratio: number;
@@ -211,8 +227,8 @@ export interface Photo {
 }
 
 export interface Video {
-  id: number;
-  establishment_id: number;
+  id: EntityId;
+  establishment_id: EntityId;
   title: string;
   url: string;
   thumbnail: string;
@@ -223,8 +239,8 @@ export interface Video {
 // AVIS
 // ---------------------------------------------------------------------
 export interface Review {
-  id: number;
-  establishment_id: number;
+  id: EntityId;
+  establishment_id: EntityId;
   author_name: string;
   avatar: string;
   rating: number;
@@ -237,8 +253,8 @@ export interface Review {
 // DISPONIBILITÉ
 // ---------------------------------------------------------------------
 export interface Availability {
-  id: number;
-  establishment_id: number;
+  id: EntityId;
+  establishment_id: EntityId;
   date: string; // ISO
   is_blocked: boolean;
   price_override: number | null;
@@ -274,13 +290,20 @@ export interface PropertyData {
 // FILTRES & RECHERCHE
 // ---------------------------------------------------------------------
 export interface SearchQuery {
-  categoryId?: number;
-  subcategoryId?: number;
-  countryId?: number;
-  communeId?: number;
-  localityId?: number;
+  categoryId?: EntityId;
+  subcategoryId?: EntityId;
+  locationId?: EntityId;
+  destination?: string;
+  countryId?: EntityId;
+  communeId?: EntityId;
+  localityId?: EntityId;
   checkIn?: string;
   checkOut?: string;
+  reservationDate?: string;
+  arrivalTime?: string;
+  activityDate?: string;
+  activityTypeId?: EntityId;
+  participants?: number;
   guests: number;
   keyword?: string;
 }
@@ -288,7 +311,7 @@ export interface SearchQuery {
 export interface SearchFilters {
   priceMin?: number;
   priceMax?: number;
-  amenityIds: number[];
+  amenityIds: EntityId[];
   bedrooms?: number;
   bathrooms?: number;
   ratingMin?: number;

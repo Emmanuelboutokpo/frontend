@@ -22,6 +22,12 @@ import {
   useCategoryCounts,
   useGlobalPriceRange,
 } from "@/store";
+import type { EntityId } from "@/types/types";
+
+function parseEntityId(value: string): EntityId {
+  const numeric = Number(value);
+  return value.trim() !== "" && Number.isFinite(numeric) ? numeric : value;
+}
 
 export function FiltersSidebar() {
   const countries = useCountries();
@@ -55,19 +61,19 @@ export function FiltersSidebar() {
 
   const handleCountryChange = (val: string) => {
     setSearchQuery({
-      countryId: val === "all" ? undefined : Number(val),
+      countryId: val === "all" ? undefined : parseEntityId(val),
       communeId: undefined, // reset commune when country changes
     });
   };
 
   const handleCommuneChange = (val: string) => {
     setSearchQuery({
-      communeId: val === "all" ? undefined : Number(val),
+      communeId: val === "all" ? undefined : parseEntityId(val),
     });
   };
 
-  const handleCategoryToggle = (categoryId?: number) => {
-    if (!categoryId) {
+  const handleCategoryToggle = (categoryId?: EntityId) => {
+    if (categoryId == null) {
       setSearchQuery({ categoryId: undefined });
     } else {
       setSearchQuery({
@@ -82,7 +88,7 @@ export function FiltersSidebar() {
     });
   };
 
-  const handleAmenityToggle = (amenityId: number) => {
+  const handleAmenityToggle = (amenityId: EntityId) => {
     const exists = searchFilters.amenityIds.includes(amenityId);
     const newIds = exists
       ? searchFilters.amenityIds.filter((id) => id !== amenityId)

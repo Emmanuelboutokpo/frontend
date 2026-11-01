@@ -6,28 +6,20 @@ import { ArrowLeft, CalendarCheck, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import AuthDialog from "@/components/front-office/AuthDialog";
-import PropertyShowcase from "@/components/front-office/PropertyShowcase";
-
 import { TabsBar, type Tab } from "@/components/admin/commun";
 
-import { useAuthStore, useBookingStore, usePropertyStore } from "@/store";
-import { formatLocation } from "@/utils/selectors";
+import { useAuthStore } from "@/store";
+import { useUserReservations } from "../../../../hook/useUserReservations";
 import { UserPageHeader } from "@/components/users/commun/UserPageHeader";
 import { UserEmptyState } from "@/components/users/commun/UserEmptyState";
+import { ReservationCard } from "@/components/users/commun/ReservationCard";
 
 // =====================================================================
 // TAB MAPPING : status booking → tab
 // =====================================================================
-const getTabForStatus = (status: string): string => {
-  if (status === "paid" || status === "pending") return "upcoming";
-  if (status === "cancelled") return "cancelled";
-  return "all";
-};
-
 export default function UserReservationsPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const data = usePropertyStore((s) => s.data);
-  const bookings = useBookingStore((s) => s.bookings);
+  const { reservations, isLoading, error, propertyDataError, reload } = useUserReservations();
 
   const [authOpen, setAuthOpen] = useState(false);
   const [tab, setTab] = useState("all");
@@ -37,61 +29,32 @@ export default function UserReservationsPage() {
     if (!isAuthenticated) setAuthOpen(true);
   }, [isAuthenticated]);
 
-  // ----- Maps précalculés -----
-  const photos = useMemo(
-    () =>
-      Object.fromEntries(
-        data.Photos.filter((p) => p.is_cover).map((p) => [p.establishment_id, p])
-      ),
-    [data.Photos]
-  );
-
-  const subcategorySlugs = useMemo(
-    () => Object.fromEntries(data.SubCategories.map((sc) => [sc.id, sc.slug])),
-    [data.SubCategories]
-  );
-
-  // ----- Enrichit les bookings avec l'établissement complet -----
-  const enrichedBookings = useMemo(() => {
-    return bookings
-      .map((b) => {
-        const establishment = data.Establishments.find(
-          (e) => e.name === b.propertyName
-        );
-        if (!establishment) return null;
-        return { booking: b, establishment };
-      })
-      .filter((x): x is NonNullable<typeof x> => x !== null);
-  }, [bookings, data.Establishments]);
-
   // ----- Filtrage par tab -----
   const filtered = useMemo(() => {
-    if (tab === "all") return enrichedBookings;
+    if (tab === "all") return reservations;
     if (tab === "upcoming")
-      return enrichedBookings.filter(
-        (x) => x.booking.status === "paid" || x.booking.status === "pending"
+      return reservations.filter(
+        (reservation) => reservation.status === "CONFIRMEE" || reservation.status === "EN_ATTENTE" || reservation.status === "EN_COURS"
       );
     if (tab === "cancelled")
-      return enrichedBookings.filter((x) => x.booking.status === "cancelled");
-    return enrichedBookings;
-  }, [enrichedBookings, tab]);
+      return reservations.filter((reservation) => reservation.status === "ANNULEE");
+    return reservations;
+  }, [reservations, tab]);
 
   // ----- Tabs -----
   const tabs: Tab[] = [
-    { value: "all", label: "Toutes", count: enrichedBookings.length },
+    { value: "all", label: "Toutes", count: reservations.length },
     {
       value: "upcoming",
       label: "À venir",
-      count: enrichedBookings.filter(
-        (x) => x.booking.status === "paid" || x.booking.status === "pending"
+      count: reservations.filter(
+        (reservation) => reservation.status === "CONFIRMEE" || reservation.status === "EN_ATTENTE" || reservation.status === "EN_COURS"
       ).length,
     },
     {
       value: "cancelled",
       label: "Annulées",
-      count: enrichedBookings.filter(
-        (x) => x.booking.status === "cancelled"
-      ).length,
+      count: reservations.filter((reservation) => reservation.status === "ANNULEE").length,
     },
   ];
 
@@ -133,6 +96,11 @@ export default function UserReservationsPage() {
         </div>
 
         {/* Contenu */}
+        {isAuthenticated && propertyDataError && (
+          <p role="status" className="mb-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">
+            Les réservations sont chargées, mais certains détails d’établissement ne sont pas disponibles.
+          </p>
+        )}
         {!isAuthenticated ? (
           <UserEmptyState
             icon={CalendarCheck}
@@ -143,6 +111,13 @@ export default function UserReservationsPage() {
               onClick: () => setAuthOpen(true),
             }}
           />
+        ) : isLoading ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">Chargement de vos réservations...</div>
+        ) : error ? (
+          <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-700">
+            <p>{error}</p>
+            <Button variant="outline" className="mt-4" onClick={() => void reload().catch(() => undefined)}>Réessayer</Button>
+          </div>
         ) : filtered.length === 0 ? (
           <UserEmptyState
             icon={CalendarCheck}
@@ -154,31 +129,8 @@ export default function UserReservationsPage() {
             }}
           />
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filtered.map(({ booking, establishment }) => {
-              const category = data.Categories.find(
-                (c) => c.id === establishment.category_id
-              );
-              const subcategory = data.SubCategories.find(
-                (sc) => sc.id === establishment.subcategory_id
-              );
-              const location =
-                formatLocation(data, establishment) ||
-                booking.propertyAddress;
-
-              return (
-                <PropertyShowcase
-                  key={booking.id}
-                  property={establishment}
-                  photo={photos[establishment.id]}
-                  subcategorySlugs={subcategorySlugs}
-                  typeName={
-                    subcategory?.name ?? category?.name ?? "Établissement"
-                  }
-                  location={location}
-                />
-              );
-            })}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {filtered.map((reservation) => <ReservationCard key={reservation.id} reservation={reservation} />)}
           </div>
         )}
       </div>

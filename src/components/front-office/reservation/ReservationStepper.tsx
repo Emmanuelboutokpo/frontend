@@ -3,10 +3,10 @@
 import { Check } from "lucide-react";
 
 const STEPS = [
-  { id: 1, label: "Séjour" },
-  { id: 2, label: "Informations" },
-  { id: 3, label: "Paiement" },
-  { id: 4, label: "Confirmation" },
+  { id: 1, label: "Dates et devis" },
+  { id: 2, label: "Paiement" },
+  { id: 3, label: "Vérification" },
+  { id: 4, label: "Règlement" },
 ];
 
 interface Props {

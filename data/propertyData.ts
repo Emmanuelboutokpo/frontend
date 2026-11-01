@@ -4,7 +4,7 @@
 // Structure normalisée : Category → SubCategory → Establishment
 // =====================================================================
 
-export const propertyData = {
+export const  propertyData = {
 
   // -----------------------------------------------------------------
   // GÉOGRAPHIE

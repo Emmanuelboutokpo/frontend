@@ -1,215 +1,482 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { isTokenExpiredResponse, useAuthStore } from "@/store/authStore";
 import type {
+  AdminAmenity,
+  AdminCategory,
   AdminEstablishment,
+  AdminLocation,
+  AdminSubcategory,
+  AvailabilityStatus,
   EstablishmentStats,
-  EstablishmentFilters,
   EstablishmentStatus,
+  PriceUnit,
 } from "@/types/establishment";
 
-// =====================================================================
-// MOCK DATA
-// =====================================================================
-const MOCK: AdminEstablishment[] = [
-  {
-    id: 1, name: "Hôtel Azalaï", slug: "hotel-azalai",
-    category: "HEBERGEMENT", subcategory: "Hôtel",
-    location: { country: "Bénin", city: "Cotonou", address: "Boulevard de la Marina" },
-    owner: "BestRev", price: 45000, currency: "FCFA", priceUnit: "nuit",
-    status: "PUBLIE", rating: 4.5, reviewCount: 128,
-    images: ["https://images.unsplash.com/photo-1566073771259-6a8506099945?w=200"],
-    description: "Un hôtel moderne au cœur de Cotonou.",
-    createdAt: "2025-04-12",
-  },
-  {
-    id: 2, name: "Résidence du Lac", slug: "residence-du-lac",
-    category: "HEBERGEMENT", subcategory: "Résidence",
-    location: { country: "Bénin", city: "Porto-Novo", address: "Rue du Lac" },
-    owner: "BestRev", price: 32000, currency: "FCFA", priceUnit: "nuit",
-    status: "PUBLIE", rating: 4.2, reviewCount: 96,
-    images: ["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=200"],
-    description: "Résidence calme face au lac.",
-    createdAt: "2025-03-03",
-  },
-  {
-    id: 3, name: "Villa Paradis", slug: "villa-paradis",
-    category: "HEBERGEMENT", subcategory: "Villa",
-    location: { country: "Bénin", city: "Ouidah", address: "Route des Esclaves" },
-    owner: "BestRev", price: 60000, currency: "FCFA", priceUnit: "nuit",
-    status: "EN_ATTENTE", rating: 4.3, reviewCount: 74,
-    images: ["https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=200"],
-    description: "Villa de luxe avec piscine privée.",
-    createdAt: "2025-01-14",
-  },
-  {
-    id: 4, name: "Le Goût Local", slug: "le-gout-local",
-    category: "RESTAURANT", subcategory: "Restaurant",
-    location: { country: "Bénin", city: "Abomey-Calavi", address: "Marché central" },
-    owner: "BestRev", price: 5000, currency: "FCFA", priceUnit: "personne",
-    status: "PUBLIE", rating: 4.6, reviewCount: 210,
-    images: ["https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200"],
-    description: "Cuisine béninoise authentique.",
-    createdAt: "2024-12-18",
-  },
-  {
-    id: 5, name: "Aqua Park", slug: "aqua-park",
-    category: "LOISIR", subcategory: "Parc d'attraction",
-    location: { country: "Bénin", city: "Cotonou", address: "Zone des loisirs" },
-    owner: "BestRev", price: 10000, currency: "FCFA", priceUnit: "personne",
-    status: "PUBLIE", rating: 4.1, reviewCount: 56,
-    images: ["https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=200"],
-    description: "Parc aquatique familial.",
-    createdAt: "2024-12-10",
-  },
-  {
-    id: 6, name: "La Paillote", slug: "la-paillote",
-    category: "RESTAURANT", subcategory: "Restaurant",
-    location: { country: "Bénin", city: "Grand-Popo", address: "Bord de mer" },
-    owner: "BestRev", price: 7000, currency: "FCFA", priceUnit: "personne",
-    status: "REJETE", rating: 4.0, reviewCount: 32,
-    images: ["https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=200"],
-    description: "Restaurant pieds dans l'eau.",
-    createdAt: "2024-12-05",
-  },
-  {
-    id: 7, name: "Musée de Ouidah", slug: "musee-ouidah",
-    category: "LOISIR", subcategory: "Espace touristique",
-    location: { country: "Bénin", city: "Ouidah", address: "Centre historique" },
-    owner: "BestRev", price: 3500, currency: "FCFA", priceUnit: "personne",
-    status: "SUSPENDU", rating: 4.3, reviewCount: 45,
-    images: ["https://images.unsplash.com/photo-1564399579883-451a5d44ec08?w=200"],
-    description: "Musée d'histoire et de mémoire.",
-    createdAt: "2024-12-01",
-  },
-  {
-    id: 8, name: "Terre d'Afrique", slug: "terre-afrique",
-    category: "HEBERGEMENT", subcategory: "Auberge",
-    location: { country: "Bénin", city: "Natitingou", address: "Route de l'Atacora" },
-    owner: "BestRev", price: 28000, currency: "FCFA", priceUnit: "nuit",
-    status: "PUBLIE", rating: 4.7, reviewCount: 89,
-    images: ["https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=200"],
-    description: "Auberge de charme en pleine nature.",
-    createdAt: "2024-11-28",
-  },
-];
+const API_URL = (
+  process.env.NEXT_PUBLIC_API_URL ?? "https://bestreservs-api.onrender.com"
+).replace(/\/+$/, "");
+const ESTABLISHMENTS_PATH = "/admin/establishments";
+const PAGE_LIMIT = 100;
+type ApiRecord = Record<string, unknown>;
+let establishmentListRequestId = 0;
 
-// =====================================================================
-// STORE
-// =====================================================================
 interface State {
   establishments: AdminEstablishment[];
-  filters: EstablishmentFilters;
+  total: number;
+  stats: EstablishmentStats;
+  categories: AdminCategory[];
+  locations: AdminLocation[];
+  amenities: AdminAmenity[];
   page: number;
   perPage: number;
-
-  add: (data: Omit<AdminEstablishment, "id" | "createdAt" | "rating" | "reviewCount">) => void;
-  update: (id: number, patch: Partial<AdminEstablishment>) => void;
-  remove: (id: number) => void;
-  changeStatus: (id: number, status: EstablishmentStatus) => void;
-
-  setFilters: (patch: Partial<EstablishmentFilters>) => void;
-  resetFilters: () => void;
-  setPage: (p: number) => void;
-  setPerPage: (n: number) => void;
-
-  getFiltered: () => AdminEstablishment[];
-  getStats: () => EstablishmentStats;
+  search: string;
+  statusFilter: EstablishmentStatus | "ALL";
+  categoryFilter: string | "ALL";
+  isLoading: boolean;
+  error: string | null;
+  loadEstablishments: () => Promise<void>;
+  loadStats: () => Promise<void>;
+  loadReferences: () => Promise<void>;
+  loadDetails: (id: string) => Promise<AdminEstablishment>;
+  createEstablishment: (payload: EstablishmentPayload) => Promise<AdminEstablishment>;
+  updateEstablishment: (id: string, payload: Partial<EstablishmentPayload>) => Promise<AdminEstablishment>;
+  removeEstablishment: (id: string) => Promise<void>;
+  changeStatus: (id: string, status: EstablishmentStatus) => Promise<void>;
+  changeAvailability: (id: string, status: AvailabilityStatus) => Promise<void>;
+  addPhotos: (id: string, files: File[], coverIndex?: number) => Promise<void>;
+  deletePhoto: (photoId: string) => Promise<void>;
+  setCoverPhoto: (photoId: string) => Promise<void>;
+  addAmenities: (id: string, amenityIds: string[]) => Promise<void>;
+  removeAmenity: (id: string, amenityId: string) => Promise<void>;
+  createCategory: (name: string, icon?: string) => Promise<void>;
+  updateCategory: (id: string, patch: { name?: string; icon?: string }) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
+  createSubcategory: (categoryId: string, name: string, icon?: string) => Promise<void>;
+  updateSubcategory: (id: string, patch: { category_id?: string; name?: string; icon?: string }) => Promise<void>;
+  deleteSubcategory: (id: string) => Promise<void>;
+  createLocation: (payload: Record<string, unknown>) => Promise<void>;
+  updateLocation: (id: string, patch: Record<string, unknown>) => Promise<void>;
+  deleteLocation: (id: string) => Promise<void>;
+  createAmenity: (name: string, icon?: string) => Promise<void>;
+  updateAmenity: (id: string, patch: { name?: string; icon?: string }) => Promise<void>;
+  deleteAmenity: (id: string) => Promise<void>;
+  setSearch: (search: string) => void;
+  setStatusFilter: (status: EstablishmentStatus | "ALL") => void;
+  setCategoryFilter: (categoryId: string | "ALL") => void;
+  setPage: (page: number) => void;
+  setPerPage: (perPage: number) => void;
 }
 
-const initialFilters: EstablishmentFilters = {
-  search: "",
-  category: "ALL",
-  status: "ALL",
-  country: "ALL",
-  city: "ALL",
-};
+export interface EstablishmentPayload {
+  category_id: string;
+  subcategory_id?: string | null;
+  location_id: string;
+  address: string;
+  name: string;
+  slug?: string | null;
+  description?: string | null;
+  price?: number | null;
+  price_per_night?: number | null;
+  price_per_month?: number | null;
+  price_unit?: PriceUnit | null;
+  currency?: string;
+  capacity?: number | null;
+  rooms_count?: number | null;
+  cuisine_type?: string | null;
+  area?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+}
 
-export const useAdminEstablishmentsStore = create<State>()(
-  persist(
-    (set, get) => ({
-      establishments: MOCK,
-      filters: initialFilters,
-      page: 1,
-      perPage: 8,
+function isRecord(value: unknown): value is ApiRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
-      add: (data) => {
-        const newEst: AdminEstablishment = {
-          ...data,
-          id: Date.now(),
-          rating: 0,
-          reviewCount: 0,
-          createdAt: new Date().toISOString(),
-        };
-        set((s) => ({ establishments: [newEst, ...s.establishments] }));
-      },
+function unwrap(body: unknown): unknown {
+  let value = body;
+  for (let depth = 0; depth < 3 && isRecord(value) && "data" in value; depth += 1) {
+    value = value.data;
+  }
+  return value;
+}
 
-      update: (id, patch) =>
-        set((s) => ({
-          establishments: s.establishments.map((e) =>
-            e.id === id ? { ...e, ...patch } : e
-          ),
-        })),
+function asString(value: unknown, fallback = ""): string {
+  return typeof value === "string" ? value : fallback;
+}
 
-      remove: (id) =>
-        set((s) => ({
-          establishments: s.establishments.filter((e) => e.id !== id),
-        })),
+function asNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
 
-      changeStatus: (id, status) =>
-        set((s) => ({
-          establishments: s.establishments.map((e) =>
-            e.id === id ? { ...e, status } : e
-          ),
-        })),
+function list(value: unknown): unknown[] {
+  const body = unwrap(value);
+  if (Array.isArray(body)) return body;
+  if (isRecord(body) && Array.isArray(body.items)) return body.items;
+  throw new Error("L’API a renvoyé une liste invalide.");
+}
 
-      setFilters: (patch) =>
-        set((s) => ({
-          filters: { ...s.filters, ...patch },
-          page: 1,
-        })),
+function toPhoto(value: unknown, index: number): AdminEstablishment["photos"][number] {
+  if (!isRecord(value)) throw new Error("L’API a renvoyé une photo invalide.");
+  return {
+    id: asString(value.id, `photo-${index}`),
+    url: asString(value.url ?? value.photo_url),
+    is_cover: Boolean(value.is_cover ?? value.is_cover_photo ?? value.is_cover_image),
+  };
+}
 
-      resetFilters: () => set({ filters: initialFilters, page: 1 }),
+function normalizeEstablishment(value: unknown): AdminEstablishment {
+  if (!isRecord(value) || typeof value.id !== "string") {
+    throw new Error("L’API a renvoyé un établissement invalide.");
+  }
+  const category = isRecord(value.category) ? value.category : {};
+  const subcategory = isRecord(value.subcategory) ? value.subcategory : {};
+  const location = isRecord(value.location) ? value.location : {};
+  const owner = isRecord(value.owner) ? value.owner : {};
+  const photos = Array.isArray(value.photos)
+    ? value.photos.map(toPhoto)
+    : isRecord(value.cover_photo)
+      ? [toPhoto(value.cover_photo, 0)]
+      : [];
+  const amenities = Array.isArray(value.amenities)
+    ? value.amenities.filter(isRecord).map((item) => ({
+        id: asString(item.id),
+        name: asString(item.name),
+        icon: typeof item.icon === "string" ? item.icon : null,
+      }))
+    : [];
+  const price = asNumber(value.price);
 
-      setPage: (p) => set({ page: p }),
-      setPerPage: (n) => set({ perPage: n, page: 1 }),
+  return {
+    id: value.id,
+    name: asString(value.name),
+    slug: asString(value.slug),
+    categoryId: asString(value.category_id ?? category.id),
+    category: asString(category.name, asString(value.category_name, "—")),
+    subcategoryId: typeof value.subcategory_id === "string" ? value.subcategory_id : null,
+    subcategory: asString(subcategory.name, asString(value.subcategory_name, "—")),
+    locationId: asString(value.location_id ?? location.id),
+    location: {
+      country: asString(location.country ?? location.name ?? location.country_code),
+      city: asString(location.city ?? location.name),
+      address: asString(value.address),
+    },
+    owner: asString(owner.name ?? owner.email ?? value.owner_name, "—"),
+    price: price ?? 0,
+    pricePerNight: asNumber(value.price_per_night),
+    pricePerMonth: asNumber(value.price_per_month),
+    currency: asString(value.currency, "XOF"),
+    priceUnit: typeof value.price_unit === "string" ? value.price_unit as PriceUnit : null,
+    status: isEstablishmentStatus(value.status) ? value.status : "EN_ATTENTE",
+    availabilityStatus: isAvailabilityStatus(value.availability_status) ? value.availability_status : "UNAVAILABLE",
+    rating: asNumber(value.rating) ?? 0,
+    reviewCount: asNumber(value.reviews_count) ?? 0,
+    images: photos.map((photo) => photo.url).filter(Boolean),
+    photos,
+    amenities,
+    description: asString(value.description),
+    address: asString(value.address),
+    latitude: asNumber(value.latitude),
+    longitude: asNumber(value.longitude),
+    capacity: asNumber(value.capacity),
+    roomsCount: asNumber(value.rooms_count),
+    cuisineType: typeof value.cuisine_type === "string" ? value.cuisine_type : null,
+    area: asNumber(value.area),
+    createdAt: asString(value.created_at),
+  };
+}
 
-      getFiltered: () => {
-        const { establishments, filters } = get();
-        return establishments.filter((e) => {
-          if (filters.search) {
-            const q = filters.search.toLowerCase();
-            if (
-              !e.name.toLowerCase().includes(q) &&
-              !e.location.city.toLowerCase().includes(q)
-            )
-              return false;
-          }
-          if (filters.category !== "ALL" && e.category !== filters.category)
-            return false;
-          if (filters.status !== "ALL" && e.status !== filters.status)
-            return false;
-          if (filters.country !== "ALL" && e.location.country !== filters.country)
-            return false;
-          if (filters.city !== "ALL" && e.location.city !== filters.city)
-            return false;
-          return true;
-        });
-      },
+function isEstablishmentStatus(value: unknown): value is EstablishmentStatus {
+  return value === "PUBLIE" || value === "EN_ATTENTE" || value === "REJETE" || value === "SUSPENDU";
+}
 
-      getStats: () => {
-        const list = get().establishments;
-        return {
-          total: list.length,
-          enAttente: list.filter((e) => e.status === "EN_ATTENTE").length,
-          publies: list.filter((e) => e.status === "PUBLIE").length,
-          rejetes: list.filter((e) => e.status === "REJETE").length,
-          suspendus: list.filter((e) => e.status === "SUSPENDU").length,
-        };
-      },
-    }),
-    {
-      name: "lr-admin-establishments",
-      partialize: (s) => ({ establishments: s.establishments }),
+function isAvailabilityStatus(value: unknown): value is AvailabilityStatus {
+  return value === "AVAILABLE" || value === "RENTED" || value === "UNAVAILABLE";
+}
+
+function normalizeCategory(value: unknown): AdminCategory {
+  if (!isRecord(value) || typeof value.id !== "string") throw new Error("Catégorie invalide reçue de l’API.");
+  return {
+    id: value.id,
+    name: asString(value.name),
+    icon: typeof value.icon === "string" ? value.icon : null,
+    subcategories: Array.isArray(value.subcategories)
+      ? value.subcategories.filter(isRecord).map(normalizeSubcategory)
+      : [],
+  };
+}
+
+function normalizeSubcategory(value: unknown): AdminSubcategory {
+  if (!isRecord(value) || typeof value.id !== "string") throw new Error("Sous-catégorie invalide reçue de l’API.");
+  return {
+    id: value.id,
+    category_id: asString(value.category_id),
+    name: asString(value.name),
+    icon: typeof value.icon === "string" ? value.icon : null,
+  };
+}
+
+function normalizeAmenity(value: unknown): AdminAmenity {
+  if (!isRecord(value) || typeof value.id !== "string") throw new Error("Équipement invalide reçu de l’API.");
+  return { id: value.id, name: asString(value.name), icon: typeof value.icon === "string" ? value.icon : null };
+}
+
+function normalizeLocation(value: unknown): AdminLocation {
+  if (!isRecord(value) || typeof value.id !== "string") throw new Error("Lieu invalide reçu de l’API.");
+  return {
+    id: value.id,
+    name: asString(value.name),
+    type: value.type as AdminLocation["type"],
+    parent_id: typeof value.parent_id === "string" ? value.parent_id : null,
+    country_code: asString(value.country_code),
+    latitude: asNumber(value.latitude),
+    longitude: asNumber(value.longitude),
+    timezone: typeof value.timezone === "string" ? value.timezone : null,
+    population: asNumber(value.population),
+    metadata_json: isRecord(value.metadata_json) ? value.metadata_json : null,
+    is_active: Boolean(value.is_active),
+    created_at: asString(value.created_at),
+    updated_at: asString(value.updated_at),
+  };
+}
+
+async function request(path: string, options: RequestInit = {}): Promise<unknown> {
+  const token = useAuthStore.getState().accessToken;
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
+  const response = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: {
+      ...(!isFormData && options.body ? { "Content-Type": "application/json" } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
+  });
+  const body: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    if (isTokenExpiredResponse(response.status, body) && token && useAuthStore.getState().accessToken === token) {
+      useAuthStore.getState().expireSession();
     }
-  )
-);
+    const detail = isRecord(body) ? body.detail ?? body.message : null;
+    const message = typeof detail === "string"
+      ? detail
+      : Array.isArray(detail)
+        ? detail.map((item) => isRecord(item) ? asString(item.msg) : "").filter(Boolean).join(", ")
+        : `La requête a échoué (${response.status}).`;
+    throw new Error(message || `La requête a échoué (${response.status}).`);
+  }
+  return unwrap(body);
+}
+
+async function reloadReferences(set: (state: Partial<State>) => void) {
+  const [categoriesResult, locationsResult, subcategoriesResult, amenitiesResult] = await Promise.all([
+    request("/api/v1/categories?limit=100"),
+    request("/api/v1/locations?limit=100"),
+    request("/api/v1/subcategories?limit=100"),
+    request("/amenities?limit=100"),
+  ]);
+  const categoryRows = list(categoriesResult).map(normalizeCategory);
+  const subcategories = list(subcategoriesResult).map(normalizeSubcategory);
+  const categories = categoryRows.map((category) => ({
+    ...category,
+    subcategories: subcategories.filter((subcategory) => subcategory.category_id === category.id),
+  }));
+  const locations = list(locationsResult).map(normalizeLocation);
+  const amenities = list(amenitiesResult).map(normalizeAmenity);
+  set({ categories, locations, amenities });
+}
+
+export const useAdminEstablishmentsStore = create<State>((set, get) => ({
+  establishments: [],
+  total: 0,
+  stats: { total: 0, enAttente: 0, publies: 0, rejetes: 0, suspendus: 0 },
+  categories: [],
+  locations: [],
+  amenities: [],
+  page: 1,
+  perPage: 20,
+  search: "",
+  statusFilter: "ALL",
+  categoryFilter: "ALL",
+  isLoading: false,
+  error: null,
+
+  loadEstablishments: async () => {
+    const requestId = ++establishmentListRequestId;
+    set({ isLoading: true, error: null });
+    try {
+      const { search, statusFilter, categoryFilter, page, perPage } = get();
+      const params = new URLSearchParams({ limit: String(perPage), offset: String((page - 1) * perPage) });
+      if (search.trim().length >= 2) params.set("q", search.trim());
+      if (statusFilter !== "ALL") params.set("status", statusFilter);
+      if (categoryFilter !== "ALL") params.set("category_id", categoryFilter);
+      const response = await request(`${ESTABLISHMENTS_PATH}?${params}`);
+      if (!isRecord(response) || !Array.isArray(response.items)) throw new Error("L’API a renvoyé une page d’établissements invalide.");
+      if (requestId === establishmentListRequestId) {
+        set({
+          establishments: response.items.map(normalizeEstablishment),
+          total: Number(response.total) || 0,
+          isLoading: false,
+        });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Le chargement des établissements a échoué.";
+      if (requestId === establishmentListRequestId) set({ error: message, isLoading: false });
+      throw error;
+    }
+  },
+
+  loadStats: async () => {
+    try {
+      const statuses: { key: keyof Omit<EstablishmentStats, "total">; status: EstablishmentStatus }[] = [
+        { key: "enAttente", status: "EN_ATTENTE" },
+        { key: "publies", status: "PUBLIE" },
+        { key: "rejetes", status: "REJETE" },
+        { key: "suspendus", status: "SUSPENDU" },
+      ];
+      const responses = await Promise.all([
+        request(`${ESTABLISHMENTS_PATH}?limit=1`),
+        ...statuses.map(({ status }) => request(`${ESTABLISHMENTS_PATH}?limit=1&status=${status}`)),
+      ]);
+      const counts = responses.map((response) => {
+        if (!isRecord(response) || typeof response.total !== "number") {
+          throw new Error("L’API a renvoyé des statistiques d’établissements invalides.");
+        }
+        return response.total;
+      });
+      set({
+        stats: {
+          total: counts[0],
+          enAttente: counts[1],
+          publies: counts[2],
+          rejetes: counts[3],
+          suspendus: counts[4],
+        },
+      });
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : "Le chargement des statistiques a échoué." });
+      throw error;
+    }
+  },
+
+  loadReferences: async () => {
+    try {
+      await reloadReferences(set);
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : "Le chargement des référentiels a échoué." });
+      throw error;
+    }
+  },
+
+  loadDetails: async (id) => normalizeEstablishment(await request(`${ESTABLISHMENTS_PATH}/${id}`)),
+  createEstablishment: async (payload) => {
+    const result = normalizeEstablishment(await request(ESTABLISHMENTS_PATH, { method: "POST", body: JSON.stringify(payload) }));
+    await get().loadEstablishments();
+    return result;
+  },
+  updateEstablishment: async (id, payload) => {
+    const result = normalizeEstablishment(await request(`${ESTABLISHMENTS_PATH}/${id}`, { method: "PATCH", body: JSON.stringify(payload) }));
+    await get().loadEstablishments();
+    return result;
+  },
+  removeEstablishment: async (id) => {
+    await request(`${ESTABLISHMENTS_PATH}/${id}`, { method: "DELETE" });
+    await get().loadEstablishments();
+  },
+  changeStatus: async (id, status) => {
+    await request(`${ESTABLISHMENTS_PATH}/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
+    await get().loadEstablishments();
+  },
+  changeAvailability: async (id, availability_status) => {
+    await request(`${ESTABLISHMENTS_PATH}/${id}/availability`, { method: "PATCH", body: JSON.stringify({ availability_status }) });
+    await get().loadEstablishments();
+  },
+  addPhotos: async (id, files, coverIndex) => {
+    if (!files.length) return;
+    const before = await get().loadDetails(id);
+    const existingPhotoIds = new Set(before.photos.map((photo) => photo.id));
+    const body = new FormData();
+    files.forEach((file) => body.append("files", file));
+    await request(`${ESTABLISHMENTS_PATH}/${id}/photos`, { method: "POST", body });
+    const updated = await get().loadDetails(id);
+    const addedPhotos = updated.photos.filter((photo) => !existingPhotoIds.has(photo.id));
+    if (coverIndex !== undefined) {
+      const cover = addedPhotos[coverIndex];
+      if (!cover) {
+        throw new Error("Les photos ont été envoyées, mais la photo choisie pour la couverture est introuvable.");
+      }
+      await request(`/admin/photos/${cover.id}/cover`, { method: "PATCH" });
+    }
+    await get().loadEstablishments();
+  },
+  deletePhoto: async (photoId) => {
+    await request(`/admin/photos/${photoId}`, { method: "DELETE" });
+    await get().loadEstablishments();
+  },
+  setCoverPhoto: async (photoId) => {
+    await request(`/admin/photos/${photoId}/cover`, { method: "PATCH" });
+    await get().loadEstablishments();
+  },
+  addAmenities: async (id, amenityIds) => {
+    if (!amenityIds.length) return;
+    await request(`${ESTABLISHMENTS_PATH}/${id}/amenities`, { method: "POST", body: JSON.stringify({ amenity_ids: amenityIds }) });
+    await get().loadEstablishments();
+  },
+  removeAmenity: async (id, amenityId) => {
+    await request(`${ESTABLISHMENTS_PATH}/${id}/amenities/${amenityId}`, { method: "DELETE" });
+    await get().loadEstablishments();
+  },
+  createCategory: async (name, icon) => {
+    await request("/api/v1/admin/categories", { method: "POST", body: JSON.stringify({ name, icon: icon || null }) });
+    await get().loadReferences();
+  },
+  updateCategory: async (id, patch) => {
+    await request(`/api/v1/admin/categories/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
+    await get().loadReferences();
+  },
+  deleteCategory: async (id) => {
+    await request(`/api/v1/admin/categories/${id}`, { method: "DELETE" });
+    await get().loadReferences();
+  },
+  createSubcategory: async (categoryId, name, icon) => {
+    await request(`/api/v1/admin/categories/${categoryId}/subcategories`, { method: "POST", body: JSON.stringify({ name, icon: icon || null }) });
+    await get().loadReferences();
+  },
+  updateSubcategory: async (id, patch) => {
+    await request(`/api/v1/admin/subcategories/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
+    await get().loadReferences();
+  },
+  deleteSubcategory: async (id) => {
+    await request(`/api/v1/admin/subcategories/${id}`, { method: "DELETE" });
+    await get().loadReferences();
+  },
+  createLocation: async (payload) => {
+    await request("/api/v1/locations", { method: "POST", body: JSON.stringify(payload) });
+    await get().loadReferences();
+  },
+  updateLocation: async (id, patch) => {
+    await request(`/api/v1/locations/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
+    await get().loadReferences();
+  },
+  deleteLocation: async (id) => {
+    await request(`/api/v1/locations/${id}`, { method: "DELETE" });
+    await get().loadReferences();
+  },
+  createAmenity: async (name, icon) => {
+    await request("/admin/amenities", { method: "POST", body: JSON.stringify({ name, icon: icon || null }) });
+    await get().loadReferences();
+  },
+  updateAmenity: async (id, patch) => {
+    await request(`/admin/amenities/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
+    await get().loadReferences();
+  },
+  deleteAmenity: async (id) => {
+    await request(`/admin/amenities/${id}`, { method: "DELETE" });
+    await get().loadReferences();
+  },
+  setSearch: (search) => set({ search, page: 1 }),
+  setStatusFilter: (statusFilter) => set({ statusFilter, page: 1 }),
+  setCategoryFilter: (categoryFilter) => set({ categoryFilter, page: 1 }),
+  setPage: (page) => set({ page }),
+  setPerPage: (perPage) => set({ perPage, page: 1 }),
+}));

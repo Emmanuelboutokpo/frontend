@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut } from "lucide-react";
  import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { adminNav } from "../../../../config/adminNav";
+import { AdminAccountMenu } from "./AdminAccountMenu";
  
 
 interface AdminSidebarProps {
@@ -24,7 +24,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
         </div>
         <div>
           <div className="text-base font-extrabold tracking-tight text-slate-900">
-            BestRev
+            BestReservs
           </div>
           <div className="text-[10px] text-slate-500">
             Explorez. Réservez. Vivez mieux.
@@ -73,20 +73,8 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
       </nav>
  
 
-      {/* Profil utilisateur */}
       <div className="border-t p-3">
-        <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2 transition hover:bg-slate-50">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-700 text-sm font-bold text-white">
-            MA
-          </div>
-          <div className="min-w-0 flex-1 text-left">
-            <div className="truncate text-sm font-semibold text-slate-900">
-              Mathias A.
-            </div>
-            <div className="text-xs text-slate-500">Administrateur</div>
-          </div>
-          <LogOut className="h-4 w-4 text-slate-400" />
-        </button>
+        <AdminAccountMenu compact />
       </div>
     </div>
   );

@@ -14,18 +14,34 @@ import {
 } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
- 
+import { useAuthStore } from "@/store/authStore";
+import { useUserAccountStore } from "@/store/userAccountStore";
+
 const NAV_ITEMS = [
   { label: "Tableau de bord", href: "/users/", icon: LayoutDashboard },
   { label: "Mes réservations", href: "/users/reservations", icon: CalendarCheck },
   { label: "Mes favoris", href: "/users/favoris", icon: Heart },
-  { label: "Notifications", href: "/users/notifications", icon: Bell, badge: 5 },
+  { label: "Notifications", href: "/users/notifications", icon: Bell },
   { label: "Mon profil", href: "/users/profil", icon: User },
   { label: "Paramètres", href: "/users/settings", icon: Settings },
 ];
 
 function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
   const pathname = usePathname();
+  const profile = useUserAccountStore((state) => state.profile);
+  const unreadCount = useUserAccountStore((state) => state.unreadCount);
+  const firstName = useAuthStore((state) => state.firstName);
+  const lastName = useAuthStore((state) => state.lastName);
+  const avatar = useAuthStore((state) => state.avatar);
+  const role = useAuthStore((state) => state.role);
+  const displayName = [profile?.firstName || firstName, profile?.lastName || lastName]
+    .filter(Boolean)
+    .join(" ");
+  const initials = [profile?.firstName || firstName, profile?.lastName || lastName]
+    .map((name) => name?.[0] ?? "")
+    .join("")
+    .toUpperCase() || "U";
+  const roleLabel = role === "PROPRIETAIRE" ? "Propriétaire" : "Client";
 
   return (
     <div className="flex h-full flex-col">
@@ -36,7 +52,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
         </div>
         <div>
           <div className="text-base font-extrabold tracking-tight text-slate-900">
-            BestRev
+            BestReservs
           </div>
           <div className="text-[10px] text-slate-500">Espace personnel</div>
         </div>
@@ -65,9 +81,9 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
                 }`}
               />
               <span className="flex-1 truncate">{item.label}</span>
-              {item.badge && (
+              {item.href === "/users/notifications" && unreadCount > 0 && (
                 <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                  {item.badge}
+                  {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
             </Link>
@@ -83,7 +99,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
         >
           <Link href="/explorer">
             <Compass className="mr-2 h-4 w-4" />
-            Explorer BestRev
+            Explorer BestReservs
             <ExternalLink className="ml-auto h-3 w-3" />
           </Link>
         </Button>
@@ -95,14 +111,18 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
           href="/users/profil"
           className="flex items-center gap-3 rounded-lg px-3 py-2 transition hover:bg-slate-50"
         >
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-700 text-sm font-bold text-white">
-            EA
-          </div>
+          {avatar ? (
+            <img src={avatar} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+          ) : (
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-700 text-sm font-bold text-white">
+              {initials}
+            </div>
+          )}
           <div className="min-w-0 flex-1 text-left">
             <div className="truncate text-sm font-semibold text-slate-900">
-              Emmanuel A.
+              {displayName || profile?.email || "Mon compte"}
             </div>
-            <div className="text-xs text-slate-500">Client</div>
+            <div className="text-xs text-slate-500">{roleLabel}</div>
           </div>
         </Link>
       </div>

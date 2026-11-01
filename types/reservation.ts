@@ -3,12 +3,15 @@ export type ReservationStatus =
   | "CONFIRMEE"
   | "EN_COURS"
   | "TERMINEE"
-  | "ANNULEE";
+  | "REFUSEE"
+  | "ANNULEE"
+  | "EXPIREE";
 
 export type PaymentMethod =
   | "CARTE_BANCAIRE"
   | "MOBILE_MONEY"
-  | "VIREMENT";
+  | "VIREMENT"
+  | "SUR_PLACE";
 
 export type PaymentStatus = "PAYE" | "EN_ATTENTE" | "REMBOURSE" | "ECHOUE";
 
@@ -63,4 +66,65 @@ export interface ReservationFilters {
   category: ReservationCategory | "ALL";
   status: ReservationStatus | "ALL";
   period: "all" | "today" | "week" | "month" | "year";
+}
+
+export interface AdminReservation {
+  id: string;
+  reference: string;
+  establishmentId: string;
+  establishmentName: string | null;
+  establishmentCity: string | null;
+  establishmentAddress: string | null;
+  establishmentCategory: string | null;
+  establishmentDescription: string | null;
+  establishmentPrice: number | null;
+  establishmentRating: number | null;
+  establishmentImage: string | null;
+  establishmentImages: string[];
+  category: string | null;
+  reservationDate: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  quantity: number;
+  nights: number | null;
+  adults: number;
+  children: number;
+  roomOrUnit: string | null;
+  options: Record<string, unknown> | null;
+  specialRequests: string | null;
+  subtotal: number;
+  serviceFee: number;
+  total: number;
+  currency: string;
+  paymentMethod: PaymentMethod | null;
+  paymentStatus: PaymentStatus;
+  status: ReservationStatus;
+  cancelledAt: string | null;
+  cancellationReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+  clientFirstName: string;
+  clientLastName: string;
+  clientEmail: string;
+  clientPhone: string | null;
+  paymentProvider: string | null;
+  paymentReference: string | null;
+  paidAt: string | null;
+}
+
+export interface AdminReservationStats {
+  total: number;
+  pending: number;
+  confirmed: number;
+  ongoing: number;
+  completed: number;
+  cancelled: number;
+  paymentPending: number;
+  paid: number;
+  refunded: number;
+  grossPaid: number;
+  grossRefunded: number;
 }

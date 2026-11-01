@@ -18,6 +18,7 @@ import type {
   Commune,
   District,
   Locality,
+  EntityId,
 } from "../types/types";
 
 // ---------------------------------------------------------------------
@@ -26,38 +27,38 @@ import type {
 
 export const getCategoryById = (
   data: PropertyData,
-  id: number
+  id: EntityId
 ): Category | undefined => data.Categories.find((c) => c.id === id);
 
 export const getSubCategoryById = (
   data: PropertyData,
-  id: number | null
+  id: EntityId | null
 ): SubCategory | undefined =>
   id ? data.SubCategories.find((sc) => sc.id === id) : undefined;
 
 export const getEstablishmentById = (
   data: PropertyData,
-  id: number
+  id: EntityId
 ): Establishment | undefined => data.Establishments.find((e) => e.id === id);
 
 export const getCoverPhoto = (
   data: PropertyData,
-  establishmentId: number
+  establishmentId: EntityId
 ): Photo | undefined =>
   data.Photos.find((p) => p.establishment_id === establishmentId && p.is_cover) ??
   data.Photos.find((p) => p.establishment_id === establishmentId);
 
-export const getPhotos = (data: PropertyData, establishmentId: number): Photo[] =>
+export const getPhotos = (data: PropertyData, establishmentId: EntityId): Photo[] =>
   data.Photos.filter((p) => p.establishment_id === establishmentId);
 
 export const getAmenitiesByIds = (
   data: PropertyData,
-  ids: number[]
+  ids: EntityId[]
 ): Amenity[] => data.Amenities.filter((a) => ids.includes(a.id));
 
 export const getReviews = (
   data: PropertyData,
-  establishmentId: number
+  establishmentId: EntityId
 ): Review[] => data.Reviews.filter((r) => r.establishment_id === establishmentId);
 
 // ---------------------------------------------------------------------
@@ -96,19 +97,26 @@ export const filterEstablishments = (
   list = list.filter((e) => e.status === "APPROVED");
 
   // Catégorie
-  if (query.categoryId) {
+  if (query.categoryId != null) {
     list = list.filter((e) => e.category_id === query.categoryId);
   }
 
   // Sous-catégorie
-  if (query.subcategoryId) {
+  if (query.subcategoryId != null) {
     list = list.filter((e) => e.subcategory_id === query.subcategoryId);
   }
 
   // Localisation
-  if (query.countryId) list = list.filter((e) => e.country_id === query.countryId);
-  if (query.communeId) list = list.filter((e) => e.commune_id === query.communeId);
-  if (query.localityId) list = list.filter((e) => e.locality_id === query.localityId);
+  if (query.countryId != null) list = list.filter((e) => e.country_id === query.countryId);
+  if (query.communeId != null) list = list.filter((e) => e.commune_id === query.communeId);
+  if (query.localityId != null) list = list.filter((e) => e.locality_id === query.localityId);
+  if (query.destination?.trim()) {
+    const destination = query.destination.trim().toLocaleLowerCase();
+    list = list.filter((establishment) =>
+      [establishment.address, establishment.location_name]
+        .some((value) => value?.toLocaleLowerCase().includes(destination))
+    );
+  }
 
   // Capacité
   if (query.guests > 0) {
@@ -186,8 +194,8 @@ export const filterEstablishments = (
 // ---------------------------------------------------------------------
 export const countByCategory = (
   data: PropertyData
-): Record<number, number> => {
-  const counts: Record<number, number> = {};
+): Record<string, number> => {
+  const counts: Record<string, number> = {};
   for (const e of data.Establishments) {
     if (e.status !== "APPROVED") continue;
     counts[e.category_id] = (counts[e.category_id] ?? 0) + 1;
@@ -197,8 +205,8 @@ export const countByCategory = (
 
 export const countBySubCategory = (
   data: PropertyData
-): Record<number, number> => {
-  const counts: Record<number, number> = {};
+): Record<string, number> => {
+  const counts: Record<string, number> = {};
   for (const e of data.Establishments) {
     if (e.status !== "APPROVED" || e.subcategory_id == null) continue;
     counts[e.subcategory_id] = (counts[e.subcategory_id] ?? 0) + 1;
@@ -217,7 +225,7 @@ export const getPopularEstablishments = (
 
 export const getPriceRange = (
   data: PropertyData,
-  categoryId?: number
+  categoryId?: EntityId
 ): { min: number; max: number } => {
   const list = data.Establishments.filter(
     (e) =>
@@ -247,7 +255,9 @@ export const formatLocation = (
   est: Establishment
 ): string => {
   const loc = resolveLocation(data, est);
-  return [loc.locality?.name, loc.commune?.name, loc.country?.name]
+  const placeNames = [loc.locality?.name, loc.commune?.name].filter(Boolean);
+  if (placeNames.length === 0 && est.address) placeNames.push(est.address);
+  return [...placeNames, loc.country?.name ?? est.location_name]
     .filter(Boolean)
     .join(", ");
 };

@@ -1,7 +1,7 @@
 "use client";
 
-import { CalendarCheck, Heart, Star } from "lucide-react";
-import { useFavorites } from "@/store";
+import { Bell, CalendarCheck, Heart } from "lucide-react";
+import { useFavorites, useUserAccountStore } from "@/store";
 import { useUserReservations } from "../../../hook/useUserReservations";
 import { UserStatCard, UserStatsGrid } from "@/components/users/commun/UserStatsGrid";
 import { UserSection } from "@/components/users/commun/UserSection";
@@ -12,11 +12,12 @@ import { RecommendationsTabs } from "@/components/users/commun/RecommendationsTa
 export default function UserDashboardPage() {
   const { nextReservation, upcomingCount } = useUserReservations();
   const favorites = useFavorites();
+  const unreadCount = useUserAccountStore((state) => state.unreadCount);
 
   const stats: UserStatCard[] = [
     { icon: CalendarCheck, label: "Réservations à venir", value: upcomingCount, href: "/users/reservations", color: "bg-blue-50 text-blue-700" },
-    { icon: Heart, label: "Favoris enregistrés", value: favorites.length, href: "/users/favorites", color: "bg-rose-50 text-rose-700" },
-    { icon: Star, label: "Avis laissés", value: 4, color: "bg-amber-50 text-amber-700" },
+    { icon: Heart, label: "Favoris enregistrés", value: favorites.length, href: "/users/favoris", color: "bg-rose-50 text-rose-700" },
+    { icon: Bell, label: "Notifications non lues", value: unreadCount, href: "/users/notifications", color: "bg-amber-50 text-amber-700" },
   ];
 
   return (

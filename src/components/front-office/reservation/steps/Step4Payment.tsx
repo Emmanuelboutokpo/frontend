@@ -1,32 +1,24 @@
 "use client";
 
-import { CreditCard, Smartphone, Building2, Lock } from "lucide-react";
+import { CreditCard, Smartphone, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
 
-export type PaymentMethod = "card" | "mobile" | "transfer";
+export type PaymentMethod = "card" | "mobile";
 
 const METHODS = [
   {
     id: "card" as const,
     icon: CreditCard,
     label: "Carte bancaire",
-    description: "Visa, Mastercard, American Express",
-    badges: ["VISA", "MC"],
+    description: "Payer par carte via le widget sécurisé KKiaPay",
   },
   {
     id: "mobile" as const,
     icon: Smartphone,
     label: "Mobile Money",
-    description: "Moov Money, MTN, Wave",
-    badges: ["MTN", "Moov"],
-  },
-  {
-    id: "transfer" as const,
-    icon: Building2,
-    label: "Virement bancaire",
-    description: "Paiement par virement (1-3 jours)",
-    badges: [],
+    description: "Payer par Mobile Money via le widget sécurisé KKiaPay",
   },
 ];
 
@@ -35,8 +27,12 @@ interface Props {
   onPaymentMethodChange: (m: PaymentMethod) => void;
   subtotal: number;
   serviceFee: number;
+  taxAmount: number;
+  discountAmount: number;
   totalAmount: number;
   currency: string;
+  specialRequests: string;
+  onSpecialRequestsChange: (value: string) => void;
   onNext: () => void;
   onPrev: () => void;
 }
@@ -46,8 +42,12 @@ export function Step3Payment({
   onPaymentMethodChange,
   subtotal,
   serviceFee,
+  taxAmount,
+  discountAmount,
   totalAmount,
   currency,
+  specialRequests,
+  onSpecialRequestsChange,
   onNext,
   onPrev,
 }: Props) {
@@ -56,10 +56,10 @@ export function Step3Payment({
       {/* Titre */}
       <header>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-          Mode de paiement
+          Paiement sécurisé
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Choisissez comment vous souhaitez régler votre réservation.
+          Choisissez le moyen de paiement KKiaPay. La réservation ne sera confirmée qu’après vérification du paiement.
         </p>
       </header>
 
@@ -90,25 +90,30 @@ export function Step3Payment({
                 <p className="text-sm font-bold text-slate-900">{m.label}</p>
                 <p className="text-xs text-slate-500">{m.description}</p>
               </div>
-              <div className="flex gap-1">
-                {m.badges.map((b) => (
-                  <span
-                    key={b}
-                    className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600"
-                  >
-                    {b}
-                  </span>
-                ))}
-              </div>
             </label>
           );
         })}
       </RadioGroup>
 
+      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+        <label htmlFor="reservation-special-request" className="text-sm font-bold text-slate-900">
+          Demande particulière <span className="font-normal text-slate-400">(facultatif)</span>
+        </label>
+        <Textarea
+          id="reservation-special-request"
+          value={specialRequests}
+          onChange={(event) => onSpecialRequestsChange(event.target.value)}
+          maxLength={3000}
+          placeholder="Précisez une information utile à l’établissement."
+          rows={3}
+          className="mt-3 rounded-xl"
+        />
+      </section>
+
       {/* Détail du prix */}
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <h2 className="mb-4 text-sm font-bold text-slate-900">
-          Détail du paiement
+          Détail du devis
         </h2>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between text-slate-600">
@@ -123,6 +128,8 @@ export function Step3Payment({
               {serviceFee.toLocaleString("fr-FR")} {currency}
             </span>
           </div>
+          {taxAmount > 0 && <div className="flex justify-between text-slate-600"><span>Taxes</span><span className="font-semibold text-slate-900">{taxAmount.toLocaleString("fr-FR")} {currency}</span></div>}
+          {discountAmount > 0 && <div className="flex justify-between text-emerald-700"><span>Remise</span><span className="font-semibold">−{discountAmount.toLocaleString("fr-FR")} {currency}</span></div>}
           <div className="flex justify-between border-t border-slate-100 pt-3 text-base font-bold text-slate-900">
             <span>Total</span>
             <span className="text-emerald-800">
@@ -134,9 +141,9 @@ export function Step3Payment({
 
       {/* Info sécurité */}
       <div className="flex items-start gap-2 rounded-xl bg-emerald-50 p-4 text-xs text-emerald-800">
-        <Lock className="mt-0.5 h-4 w-4 shrink-0" />
+        <Info className="mt-0.5 h-4 w-4 shrink-0" />
         <span>
-          Paiement 100% sécurisé. Vos informations bancaires sont cryptées.
+          Le widget ne sera ouvert que si l’API confirme le mode test KKiaPay. Le paiement sera validé après vérification côté serveur.
         </span>
       </div>
 

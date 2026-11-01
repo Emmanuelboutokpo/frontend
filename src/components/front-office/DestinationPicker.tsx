@@ -37,18 +37,23 @@ export default function DestinationPicker({
   destinations,
 }: DestinationPickerProps) {
   const [open, setOpen] = useState(false)
+  const [locationLoading, setLocationLoading] = useState(false)
+  const [locationError, setLocationError] = useState("")
   const data = usePropertyStore((s) => s.data)
+  const fetchNearbyEstablishments = usePropertyStore((s) => s.fetchNearbyEstablishments)
 
   const popularDestinations = useMemo(() => {
-    return data.Communes.slice(0, 5).map((commune) => {
-      const dept = data.Departments.find((d) => d.id === commune.department_id)
-      const country = data.Countries.find((c) => c.id === dept?.country_id)
-      return {
-        name: commune.name,
-        description: [dept?.name, country?.name].filter(Boolean).join(", "),
-      }
+    const destinations = data.Establishments.flatMap((establishment) => {
+      const name = establishment.location_name || establishment.address
+      if (!name) return []
+      return [{
+        name,
+        description: establishment.location_name ? establishment.address : "",
+      }]
     })
-  }, [data.Communes, data.Departments, data.Countries])
+    return Array.from(new Map(destinations.map((destination) => [destination.name, destination])).values())
+      .slice(0, 5)
+  }, [data.Establishments])
 
   const allDestinations = useMemo(() => {
     if (destinations && destinations.length > 0) return destinations
@@ -58,6 +63,38 @@ export default function DestinationPicker({
   const handleSelect = (destination: string) => {
     onChange(destination)
     setOpen(false)
+  }
+
+  const handleUseCurrentLocation = () => {
+    setLocationError("")
+    if (!navigator.geolocation) {
+      setLocationError("La géolocalisation n'est pas disponible sur cet appareil.")
+      return
+    }
+
+    setLocationLoading(true)
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        void fetchNearbyEstablishments(coords.latitude, coords.longitude)
+          .then((establishments) => {
+            if (establishments.length === 0) {
+              setLocationError("Aucun établissement de la base de données ne correspond à votre position.");
+              return;
+            }
+            onChange("Près de moi")
+            setOpen(false)
+          })
+          .catch((error: unknown) => {
+            setLocationError(error instanceof Error ? error.message : "Impossible de charger les établissements proches.")
+          })
+          .finally(() => setLocationLoading(false))
+      },
+      (error) => {
+        setLocationError(error.message || "Impossible d'obtenir votre position.")
+        setLocationLoading(false)
+      },
+      { timeout: 10000 }
+    )
   }
 
   return (
@@ -107,10 +144,8 @@ export default function DestinationPicker({
             <CommandGroup heading="Près de vous">
               <CommandItem
                 value="Ma position actuelle"
-                onSelect={() => {
-                  onChange("Près de moi")
-                  setOpen(false)
-                }}
+                onSelect={handleUseCurrentLocation}
+                disabled={locationLoading}
                 className="cursor-pointer rounded-xl px-3 py-3"
               >
                 <div className="flex w-full items-center gap-3">
@@ -120,7 +155,7 @@ export default function DestinationPicker({
 
                   <div className="flex-1">
                     <p className="font-semibold text-slate-800">
-                      Ma position actuelle
+                      {locationLoading ? "Recherche autour de vous..." : "Ma position actuelle"}
                     </p>
 
                     <p className="text-xs text-slate-500">
@@ -129,6 +164,11 @@ export default function DestinationPicker({
                   </div>
                 </div>
               </CommandItem>
+              {locationError && (
+                <p role="alert" className="px-3 py-2 text-xs text-red-700">
+                  {locationError}
+                </p>
+              )}
             </CommandGroup>
 
             <CommandSeparator className="my-2" />

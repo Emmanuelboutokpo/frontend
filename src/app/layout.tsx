@@ -38,7 +38,7 @@ export default function RootLayout({
       <body
         className={`flex min-h-screen flex-col ${jakarta.variable} ${playfair.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
       > 
-       <main className="flex-1 pb-20 lg:pb-0">
+       <main className="flex-1 lg:pb-0">
         {children}
        </main>
       </body>

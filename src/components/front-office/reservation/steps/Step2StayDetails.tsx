@@ -4,43 +4,57 @@ import { useState } from "react";
 import { Calendar, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import type { Establishment } from "@/types/types";
 
 interface Props {
   establishment: Establishment;
+  isAccommodation: boolean;
   checkIn: string;
   checkOut: string;
+  startTime: string;
+  endTime: string;
   adults: number;
   children: number;
   room: string;
   onCheckInChange: (v: string) => void;
   onCheckOutChange: (v: string) => void;
+  onStartTimeChange: (v: string) => void;
+  onEndTimeChange: (v: string) => void;
   onAdultsChange: (n: number) => void;
   onChildrenChange: (n: number) => void;
   onRoomChange: (v: string) => void;
   subtotal: number;
   nights: number;
+  isCheckingAvailability?: boolean;
+  availabilityMessage?: string;
+  isAvailable?: boolean | null;
   onNext: () => void;
 }
 
 export function Step1StayDetails({
   establishment,
+  isAccommodation,
   checkIn,
   checkOut,
+  startTime,
+  endTime,
   adults,
   children,
   room,
   onCheckInChange,
   onCheckOutChange,
+  onStartTimeChange,
+  onEndTimeChange,
   onAdultsChange,
   onChildrenChange,
   onRoomChange,
   subtotal,
   nights,
+  isCheckingAvailability = false,
+  availabilityMessage,
+  isAvailable,
   onNext,
 }: Props) {
   const [calendarTarget, setCalendarTarget] = useState<"checkIn" | "checkOut" | null>(null);
@@ -50,7 +64,7 @@ export function Step1StayDetails({
   const minDate =
     calendarTarget === "checkOut" && checkIn ? new Date(checkIn) : today;
 
-  const canContinue = checkIn && checkOut && nights >= 1;
+  const canContinue = Boolean(checkIn) && (!isAccommodation || Boolean(checkOut) && nights >= 1);
 
   return (
     <div className="space-y-8">
@@ -60,16 +74,18 @@ export function Step1StayDetails({
           Détails du séjour
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Choisissez vos dates et le nombre de voyageurs.
+          {isAccommodation
+            ? "Choisissez les dates de votre séjour et le nombre de voyageurs."
+            : "Choisissez la date, l’horaire souhaité et le nombre de participants."}
         </p>
       </header>
 
       {/* Dates */}
       <section className="rounded-2xl border border-slate-200 bg-white">
         <div className="border-b border-slate-100 px-5 py-4">
-          <h2 className="text-sm font-bold text-slate-900">Dates du séjour</h2>
+          <h2 className="text-sm font-bold text-slate-900">{isAccommodation ? "Dates du séjour" : "Date de votre réservation"}</h2>
         </div>
-        <div className="grid grid-cols-2 divide-x divide-slate-100">
+        <div className={`grid divide-x divide-slate-100 ${isAccommodation ? "grid-cols-2" : "grid-cols-1"}`}>
           <button
             type="button"
             onClick={() => setCalendarTarget("checkIn")}
@@ -90,97 +106,94 @@ export function Step1StayDetails({
             </div>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setCalendarTarget("checkOut")}
-            className="px-5 py-4 text-left transition hover:bg-slate-50"
-          >
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-              <Calendar className="h-3 w-3" />
-              Départ
-            </div>
-            <div className="mt-1.5 text-sm font-semibold text-slate-900">
-              {checkOut
-                ? new Date(checkOut).toLocaleDateString("fr-FR", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })
-                : "Sélectionner"}
-            </div>
-          </button>
+          {isAccommodation && (
+            <button
+              type="button"
+              onClick={() => setCalendarTarget("checkOut")}
+              className="px-5 py-4 text-left transition hover:bg-slate-50"
+            >
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <Calendar className="h-3 w-3" />
+                Départ
+              </div>
+              <div className="mt-1.5 text-sm font-semibold text-slate-900">
+                {checkOut
+                  ? new Date(checkOut).toLocaleDateString("fr-FR", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })
+                  : "Sélectionner"}
+              </div>
+            </button>
+          )}
         </div>
+        {!isAccommodation && (
+          <div className="grid grid-cols-2 divide-x divide-slate-100 border-t border-slate-100">
+            <label className="px-5 py-4 text-left">
+              <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Heure d’arrivée</span>
+              <input aria-label="Heure d’arrivée souhaitée" type="time" value={startTime} onChange={(event) => onStartTimeChange(event.target.value)} className="mt-1.5 w-full bg-transparent text-sm font-semibold text-slate-900 outline-none" />
+            </label>
+            <label className="px-5 py-4 text-left">
+              <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Heure de fin (optionnelle)</span>
+              <input aria-label="Heure de fin souhaitée" type="time" value={endTime} onChange={(event) => onEndTimeChange(event.target.value)} className="mt-1.5 w-full bg-transparent text-sm font-semibold text-slate-900 outline-none" />
+            </label>
+          </div>
+        )}
       </section>
 
       {/* Voyageurs */}
       <section className="rounded-2xl border border-slate-200 bg-white">
         <div className="border-b border-slate-100 px-5 py-4">
-          <h2 className="text-sm font-bold text-slate-900">Voyageurs</h2>
+          <h2 className="text-sm font-bold text-slate-900">{isAccommodation ? "Voyageurs" : "Participants"}</h2>
         </div>
         <div className="divide-y divide-slate-100">
-          <CounterRow
-            label="Adultes"
-            hint="13 ans et plus"
-            value={adults}
-            min={1}
-            onChange={onAdultsChange}
-          />
-          <CounterRow
-            label="Enfants"
-            hint="0 - 12 ans"
-            value={children}
-            min={0}
-            onChange={onChildrenChange}
-          />
+          {isAccommodation ? (
+            <>
+              <CounterRow label="Adultes" hint="13 ans et plus" value={adults} min={1} max={100 - children} onChange={onAdultsChange} />
+              <CounterRow label="Enfants" hint="0 - 12 ans" value={children} min={0} max={100 - adults} onChange={onChildrenChange} />
+            </>
+          ) : (
+            <CounterRow label="Nombre de participants" hint="Nombre total de personnes" value={adults} min={1} max={100} onChange={onAdultsChange} />
+          )}
         </div>
       </section>
 
-      {/* Chambre */}
-      <section className="rounded-2xl border border-slate-200 bg-white">
+      {/* Unité réservée */}
+      {isAccommodation && <section className="rounded-2xl border border-slate-200 bg-white">
         <div className="border-b border-slate-100 px-5 py-4">
-          <h2 className="text-sm font-bold text-slate-900">Chambre</h2>
+          <h2 className="text-sm font-bold text-slate-900">Type de chambre souhaité (optionnel)</h2>
         </div>
         <div className="p-5">
-          <Select value={room} onValueChange={onRoomChange}>
-            <SelectTrigger className="h-11 rounded-xl">
-              <SelectValue placeholder="Sélectionner une chambre" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="standard">Chambre Standard</SelectItem>
-              <SelectItem value="deluxe">Chambre Deluxe</SelectItem>
-              <SelectItem value="suite">Suite Junior</SelectItem>
-              <SelectItem value="suite-senior">Suite Senior</SelectItem>
-            </SelectContent>
-          </Select>
-          <p className="mt-2 text-xs text-slate-500">
-            1 lit double · Vue piscine · Petit-déjeuner inclus
-          </p>
+          <Input value={room === "unspecified" ? "" : room} onChange={(event) => onRoomChange(event.target.value)} maxLength={100} placeholder="Ex. chambre double, suite..." className="h-11 rounded-xl" />
+          <p className="mt-2 text-xs text-slate-500">Votre préférence sera transmise à l’établissement, sans garantir sa disponibilité.</p>
         </div>
-      </section>
+      </section>}
 
       {/* Résumé prix */}
-      {nights > 0 && (
+      {isAccommodation && nights > 0 && (
         <section className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-5">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-600">
-              {establishment.price_per_night?.toLocaleString("fr-FR")}{" "}
-              {establishment.currency} × {nights} nuit{nights > 1 ? "s" : ""}
-            </span>
-            <span className="font-bold text-slate-900">
-              {subtotal.toLocaleString("fr-FR")} {establishment.currency}
-            </span>
+            <span className="text-slate-600">{nights} nuit{nights > 1 ? "s" : ""}</span>
+            <span className="font-bold text-slate-900">{subtotal > 0 ? `${subtotal.toLocaleString("fr-FR")} ${establishment.currency}` : "Montant calculé à l’étape suivante"}</span>
           </div>
         </section>
+      )}
+
+      {availabilityMessage && (
+        <p role={isAvailable === false ? "alert" : "status"} className={`rounded-xl p-4 text-sm ${
+          isAvailable === false ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-800"
+        }`}>{availabilityMessage}</p>
       )}
 
       {/* Actions */}
       <div className="flex justify-end pt-2">
         <Button
           onClick={onNext}
-          disabled={!canContinue}
+          disabled={!canContinue || isCheckingAvailability}
           className="h-12 rounded-xl bg-emerald-700 px-8 font-semibold hover:bg-emerald-800 disabled:opacity-50"
         >
-          Continuer
+          {isCheckingAvailability ? "Vérification et calcul du devis..." : "Vérifier la disponibilité"}
         </Button>
       </div>
 
@@ -208,7 +221,7 @@ export function Step1StayDetails({
               if (calendarTarget === "checkIn") {
                 onCheckInChange(v);
                 if (checkOut && date >= new Date(checkOut)) onCheckOutChange("");
-              } else {
+              } else if (isAccommodation) {
                 onCheckOutChange(v);
               }
               setCalendarTarget(null);
@@ -222,12 +235,13 @@ export function Step1StayDetails({
 }
 
 function CounterRow({
-  label, hint, value, min, onChange,
+  label, hint, value, min, max, onChange,
 }: {
   label: string;
   hint: string;
   value: number;
   min: number;
+  max: number;
   onChange: (n: number) => void;
 }) {
   return (
@@ -252,7 +266,8 @@ function CounterRow({
           type="button"
           variant="outline"
           size="icon"
-          onClick={() => onChange(value + 1)}
+          onClick={() => onChange(Math.min(max, value + 1))}
+          disabled={value >= max}
           className="h-8 w-8 rounded-full"
         >
           <Plus className="h-3.5 w-3.5" />

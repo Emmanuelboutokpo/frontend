@@ -57,7 +57,7 @@ interface Props<T> {
   description?: string;
   fields: FormField[];
   initialValues: T;
-  onSubmit: (values: T) => void;
+  onSubmit: (values: T) => void | Promise<void>;
   submitLabel?: string;
   children?: ReactNode;
   customFooter?: ReactNode;
@@ -90,11 +90,15 @@ export function EntityFormModal<T extends Record<string, any>>({
 }: Props<T>) {
   const [form, setForm] = useState<T>(initialValues);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (open) {
       setForm(initialValues);
       setErrors({});
+      setSubmitError(null);
+      setIsSubmitting(false);
     }
   }, [open, initialValues]);
 
@@ -107,7 +111,7 @@ export function EntityFormModal<T extends Record<string, any>>({
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const newErrors: Record<string, string> = {};
@@ -127,8 +131,16 @@ export function EntityFormModal<T extends Record<string, any>>({
       return;
     }
 
-    onSubmit(form);
-    onOpenChange(false);
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      await onSubmit(form);
+      onOpenChange(false);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "L’enregistrement a échoué.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const finalTitle = title ?? (mode === "create" ? "Ajouter" : "Modifier");
@@ -146,6 +158,11 @@ export function EntityFormModal<T extends Record<string, any>>({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          {submitError && (
+            <p role="alert" className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              {submitError}
+            </p>
+          )}
           {children}
 
           {/* Grille de champs */}
@@ -261,9 +278,10 @@ export function EntityFormModal<T extends Record<string, any>>({
               </Button>
               <Button
                 type="submit"
-                className="rounded-xl bg-emerald-700 hover:bg-emerald-800"
+                disabled={isSubmitting}
+                className="rounded-xl bg-emerald-700 hover:bg-emerald-800 disabled:opacity-70"
               >
-                {finalSubmitLabel}
+                {isSubmitting ? "Enregistrement..." : finalSubmitLabel}
               </Button>
             </DialogFooter>
           )}

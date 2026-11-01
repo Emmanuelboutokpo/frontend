@@ -71,13 +71,31 @@ function FitBounds({ positions }: { positions: [number, number][] }) {
 
   useEffect(() => {
     if (positions.length === 0) return;
-    try {
-      const bounds = L.latLngBounds(positions);
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
-    } catch {
-      // ignore
+    if (positions.length === 1) {
+      map.setView(positions[0], 12);
+      return;
     }
+    const bounds = L.latLngBounds(positions);
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
   }, [positions, map]);
+
+  return null;
+}
+
+function InvalidateMapSize() {
+  const map = useMap();
+
+  useEffect(() => {
+    const container = map.getContainer();
+    const observer = new ResizeObserver(() => map.invalidateSize({ pan: false }));
+    observer.observe(container);
+    const frame = requestAnimationFrame(() => map.invalidateSize({ pan: false }));
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [map]);
 
   return null;
 }
@@ -89,13 +107,21 @@ export function MapView() {
   const data = usePropertyStore((s) => s.data);
   const selectedId = usePropertyStore((s) => s.selectedEstablishmentId);
   const selectEstablishment = usePropertyStore((s) => s.selectEstablishment);
+  const establishmentsLoaded = usePropertyStore((s) => s.establishmentsLoaded);
+  const establishmentsLoading = usePropertyStore((s) => s.establishmentsLoading);
+  const establishmentsError = usePropertyStore((s) => s.establishmentsError);
   const filteredEstablishments = useFilteredEstablishments();
 
   // Établissements avec coordonnées GPS valides
   const establishmentsWithCoords = useMemo(
     () =>
       filteredEstablishments.filter(
-        (e) => typeof e.lat === "number" && typeof e.lng === "number"
+        (e) =>
+          Number.isFinite(e.lat) &&
+          Number.isFinite(e.lng) &&
+          Math.abs(e.lat) <= 90 &&
+          Math.abs(e.lng) <= 180 &&
+          !(e.lat === 0 && e.lng === 0)
       ),
     [filteredEstablishments]
   );
@@ -108,7 +134,7 @@ export function MapView() {
   const defaultCenter: [number, number] = [6.3654, 2.4183]; // Cotonou
 
   return (
-    <div className="sticky top-24 h-[calc(100vh-120px)] overflow-hidden rounded-xl border bg-muted/30 shadow-sm">
+    <div className="relative sticky top-24 h-[calc(100vh-120px)] min-h-[400px] overflow-hidden rounded-xl border bg-muted/30 shadow-sm">
       <MapContainer
         center={defaultCenter}
         zoom={12}
@@ -122,16 +148,17 @@ export function MapView() {
           maxZoom={19}
         />
 
+        <InvalidateMapSize />
         {positions.length > 0 && <FitBounds positions={positions} />}
 
         {establishmentsWithCoords.map((est) => {
           const cover = getCoverPhoto(data, est.id);
           const isActive = est.id === selectedId;
           const price = est.price_per_night ?? est.price_per_month ?? 0;
-          const category = data.Categories.find((c) => c.id === est.category_id);
+          const category = est.category ?? data.Categories.find((c) => c.id === est.category_id);
           const subcategory = data.SubCategories.find(
             (sc) => sc.id === est.subcategory_id
-          );
+          ) ?? est.subcategory;
           const categorySlug = category?.slug ?? "hebergement";
           const subPath = subcategory?.slug ? `/${subcategory.slug}` : "";
           const detailUrl = `/${categorySlug}${subPath}/${est.slug}`;
@@ -163,7 +190,7 @@ export function MapView() {
                     <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
                     <span className="text-xs font-bold">{est.rating.toFixed(1)}</span>
                     <span className="text-[10px] text-gray-400">
-                      ({est.review_ids.length} avis)
+                      ({est.review_count ?? est.review_ids.length} avis)
                     </span>
                   </div>
                   <div className="flex items-baseline justify-between border-t border-gray-100 pt-1.5">
@@ -189,6 +216,18 @@ export function MapView() {
           );
         })}
       </MapContainer>
+      {(establishmentsLoading || !establishmentsLoaded || establishmentsError || establishmentsWithCoords.length === 0) && (
+        <div
+          role={establishmentsError ? "alert" : "status"}
+          className={`absolute left-1/2 top-3 z-[1001] -translate-x-1/2 rounded-lg px-4 py-2 text-sm shadow ${
+            establishmentsError ? "bg-red-50 text-red-800" : "bg-white/95 text-slate-600"
+          }`}
+        >
+          {establishmentsLoading || (!establishmentsLoaded && !establishmentsError)
+            ? "Chargement des établissements..."
+            : establishmentsError ?? "Aucun établissement avec coordonnées GPS pour ces critères."}
+        </div>
+      )}
     </div>
   );
 }

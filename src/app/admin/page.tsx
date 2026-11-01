@@ -6,7 +6,7 @@ import {
   Clock,
   CalendarDays,
   Wallet,
-  TrendingUp,
+  AlertTriangle,
 } from "lucide-react";
 
 import { ReservationsChart } from "@/components/admin/dashboard/ReservationsChart";
@@ -14,48 +14,48 @@ import { CategoryPieChart } from "@/components/admin/dashboard/CategoryPieChart"
 import { LatestBookingsTable } from "@/components/admin/dashboard/LatestBookingsTable";
 import { PendingEstablishments } from "@/components/admin/dashboard/PendingEstablishments";
 import { TopDestinations } from "@/components/admin/dashboard/TopDestinations";
+import { TopEstablishments } from "@/components/admin/dashboard/TopEstablishments";
 import { RecentActivities } from "@/components/admin/dashboard/RecentActivities";
 import { useAdminDashboard } from "../../../hook/admin/useAdminDashboard";
 import { AdminPageHeader, StatCard, StatsGrid } from "@/components/admin/commun";
- 
+import { useAuthStore } from "@/store/authStore";
+
 
 export default function AdminDashboardPage() {
   const stats = useAdminDashboard();
+  const firstName = useAuthStore((state) => state.firstName);
+  const lastName = useAuthStore((state) => state.lastName);
+  const administratorName = [firstName, lastName].filter(Boolean).join(" ");
 
   const statCards: StatCard[] = [
     {
       icon: Users,
       label: "Utilisateurs",
       value: stats.users,
-      trend: 12,
       color: "bg-emerald-50 text-emerald-700",
     },
     {
       icon: Building2,
       label: "Établissements",
       value: stats.establishments,
-      trend: 8,
       color: "bg-blue-50 text-blue-700",
     },
     {
       icon: Clock,
       label: "En attente",
       value: stats.pending,
-      trend: -5,
       color: "bg-amber-50 text-amber-700",
     },
     {
       icon: CalendarDays,
       label: "Réservations",
       value: stats.bookings,
-      trend: 18,
       color: "bg-violet-50 text-violet-700",
     },
     {
       icon: Wallet,
-      label: "Revenus (FCFA)",
+      label: "Revenus",
       value: stats.revenue,
-      trend: 22,
       color: "bg-rose-50 text-rose-700",
       isCurrency: true,
     },
@@ -65,23 +65,22 @@ export default function AdminDashboardPage() {
     <div className="space-y-6">
       <AdminPageHeader
         breadcrumbs={[{ label: "Dashboard" }]}
-        title="Bonjour Mathias 👋"
-        description="Voici un aperçu de l'activité de la plateforme aujourd'hui."
-        actions={[
-          {
-            label: "21 Sept. 2026",
-            icon: CalendarDays,
-            variant: "outline",
-            onClick: () => console.log("Date picker"),
-          },
-        ]}
+        title={administratorName ? `Bonjour ${administratorName}` : "Dashboard"}
+        description="Vue d’ensemble de l’activité de la plateforme."
       />
 
-      <StatsGrid cards={statCards} columns={5} />
+      {Object.entries(stats.errors).length > 0 && (
+        <div role="alert" className="space-y-1 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+          <p className="flex items-center gap-2 font-semibold"><AlertTriangle className="h-4 w-4" />Certaines statistiques ne sont pas disponibles.</p>
+          {Object.entries(stats.errors).map(([key, error]) => <p key={key} className="text-xs">{key}: {error}</p>)}
+        </div>
+      )}
+
+      <StatsGrid cards={statCards} columns={5} loading={stats.isLoading} />
 
       <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-        <ReservationsChart />
-        <CategoryPieChart />
+        <ReservationsChart rows={stats.data.reservationChart} error={stats.errors.reservationChart} />
+        <CategoryPieChart rows={stats.data.categoryChart} error={stats.errors.categoryChart} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -90,27 +89,9 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_1.5fr_0.8fr]">
-        <TopDestinations />
-        <RecentActivities />
-        <DashboardPromoCard />
-      </div>
-    </div>
-  );
-}
-
-function DashboardPromoCard() {
-  return (
-    <div className="flex flex-col justify-between rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5">
-      <div className="mb-3 grid h-12 w-12 place-items-center rounded-full bg-emerald-100">
-        <TrendingUp className="h-5 w-5 text-emerald-700" />
-      </div>
-      <div>
-        <h3 className="text-base font-bold text-slate-900">
-          La plateforme grandit chaque jour !
-        </h3>
-        <p className="mt-2 text-xs text-slate-500">
-          Merci de contribuer à un tourisme plus accessible.
-        </p>
+        <TopDestinations rows={stats.data.destinations} error={stats.errors.destinations} />
+        <TopEstablishments rows={stats.data.topEstablishments} error={stats.errors.topEstablishments} />
+        <RecentActivities rows={stats.data.activities} error={stats.errors.activities} />
       </div>
     </div>
   );

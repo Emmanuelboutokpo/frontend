@@ -15,24 +15,28 @@ import {
 
 import AuthDialog from '@/components/front-office/AuthDialog'
 import { Card, CardContent } from '@/components/ui/card'
-import { amenityIconMap, Establishment, Photo } from '@/types/types'
+import { amenityIconMap, Establishment, EntityId, Photo } from '@/types/types'
 import { useAmenities, useAuthStore, usePropertyStore } from '@/store'
 import { Badge } from '@/components/ui/badge'
 
-const categoryPaths: Record<number, string> = { 1: 'hebergement', 2: 'restaurant', 3: 'loisir' }
+const categoryPaths: Record<string, string> = { 1: 'hebergement', 2: 'restaurant', 3: 'loisir' }
 
 
 function formatPrice(property: Establishment) {
-  const price = property.price_per_night ?? property.price_per_month
+  const price = property.price ?? property.price_per_night ?? property.price_per_month
+  const categorySlug = property.category?.slug ?? categoryPaths[String(property.category_id)]
 
   if (!price) {
     return 'Prix sur demande'
   }
 
   const formattedPrice = price.toLocaleString('fr-FR')
+  if (property.price_unit) {
+    return `${formattedPrice} ${property.currency} / ${property.price_unit.toLowerCase().replaceAll('_', ' ')}`
+  }
 
   // Hébergement
-  if (property.category_id === 1) {
+  if (categorySlug === 'hebergement') {
     if (property.price_per_night) {
       return `${formattedPrice} ${property.currency} / nuit`
     }
@@ -41,25 +45,27 @@ function formatPrice(property: Establishment) {
   }
 
   // Restaurant
-  if (property.category_id === 2) {
+  if (categorySlug === 'restaurant') {
     return `${formattedPrice} ${property.currency} / personne`
   }
 
   // Loisirs
-  if (property.category_id === 3) {
+  if (categorySlug === 'loisir') {
     return `${formattedPrice} ${property.currency} / personne`
   }
 
   return `${formattedPrice} ${property.currency}`
 }
 
-function propertyHref(property: Establishment, subcategorySlugs: Record<number, string>) {
-  const categoryPath = categoryPaths[property.category_id] ?? 'hebergement'
-  const subcategoryPath = property.subcategory_id ? `/${subcategorySlugs[property.subcategory_id]}` : ''
+function propertyHref(property: Establishment, subcategorySlugs: Record<string, string>) {
+  const categoryPath = property.category?.slug ?? categoryPaths[String(property.category_id)] ?? 'hebergement'
+  const subcategorySlug = property.subcategory?.slug ??
+    (property.subcategory_id ? subcategorySlugs[String(property.subcategory_id)] : undefined)
+  const subcategoryPath = subcategorySlug ? `/${subcategorySlug}` : ''
   return `/${categoryPath}${subcategoryPath}/${property.slug}`
 }
 
-function PropertyShowcase({ property, photo, typeName, location, subcategorySlugs }: { property: Establishment; photo?: Photo; subcategorySlugs: Record<number, string> ;  typeName: string; location: string;}) {
+function PropertyShowcase({ property, photo, typeName, location, subcategorySlugs }: { property: Establishment; photo?: Photo; subcategorySlugs: Record<string, string> ;  typeName: string; location: string;}) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const favorite = usePropertyStore((state) => state.favoriteIds.includes(property.id))
   const toggleFavorite = usePropertyStore((state) => state.toggleFavorite)
@@ -81,7 +87,7 @@ function PropertyShowcase({ property, photo, typeName, location, subcategorySlug
             {property.rating.toFixed(1)}
           </span>
           <span className="text-[10px] text-muted-foreground">
-            ({property.review_ids.length})
+            ({property.review_count ?? property.review_ids.length})
           </span>
         </div>
         <Badge

@@ -1,19 +1,41 @@
 "use client";
 
-import { LucideIcon } from "lucide-react";
+import { ExternalLink, LucideIcon, Trash2 } from "lucide-react";
 
 interface Props {
   icon: LucideIcon;
-  iconColor: string;   // "bg-emerald-50 text-emerald-700"
+  iconColor: string;
   title: string;
   description: string;
   time: string;
   unread?: boolean;
+  actionUrl?: string | null;
+  onMarkRead?: () => void;
+  onDelete?: () => void;
 }
 
 export function NotificationItem({
-  icon: Icon, iconColor, title, description, time, unread,
+  icon: Icon,
+  iconColor,
+  title,
+  description,
+  time,
+  unread,
+  actionUrl,
+  onMarkRead,
+  onDelete,
 }: Props) {
+  const normalizedActionUrl = actionUrl?.replace(
+    /^\/pages\/(?:front-office|users)\/reservations(?=\/|[?#]|$)/,
+    "/users/reservations",
+  );
+  const safeActionUrl =
+    (normalizedActionUrl?.startsWith("/") &&
+      !normalizedActionUrl.startsWith("//")) ||
+    (normalizedActionUrl && /^https?:\/\//i.test(normalizedActionUrl))
+      ? normalizedActionUrl
+      : null;
+
   return (
     <div
       className={`flex items-start gap-3 rounded-2xl border p-4 transition ${
@@ -29,7 +51,38 @@ export function NotificationItem({
           {unread && <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-emerald-500" />}
         </div>
         <p className="mt-1 text-xs text-slate-500">{description}</p>
-        <p className="mt-1.5 text-[10px] text-slate-400">{time}</p>
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <p className="text-[10px] text-slate-400">{time}</p>
+          {safeActionUrl && (
+            <a
+              href={safeActionUrl}
+              className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 hover:underline"
+            >
+              Voir
+              <ExternalLink className="h-3 w-3" aria-hidden="true" />
+            </a>
+          )}
+          {onMarkRead && (
+            <button
+              type="button"
+              onClick={onMarkRead}
+              className="text-[10px] font-semibold text-slate-600 hover:text-emerald-700 hover:underline"
+            >
+              Marquer comme lue
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={onDelete}
+              aria-label={`Supprimer la notification : ${title}`}
+              className="ml-auto inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500 hover:text-red-600"
+            >
+              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+              Supprimer
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

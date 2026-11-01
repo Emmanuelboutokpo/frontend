@@ -3,6 +3,7 @@
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store";
+import { useUserAccountStore } from "@/store/userAccountStore";
 
 interface Props {
   /** URL de l'image de fond (optionnel) */
@@ -21,7 +22,8 @@ export function WelcomeBanner({
   searchPlaceholder = "Où souhaitez-vous aller ?",
   showSearch = true,
 }: Props) {
-  const firstName = useAuthStore((s) => s.firstName) ?? "Emmanuel";
+  const authFirstName = useAuthStore((s) => s.firstName);
+  const firstName = useUserAccountStore((s) => s.profile?.firstName) ?? authFirstName;
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -45,8 +47,7 @@ export function WelcomeBanner({
           {/* Titre */}
           <div>
             <h1 className="text-2xl font-bold leading-tight text-white lg:text-3xl">
-              {/* Bonjour {firstName} ! 👋 */}
-              Bonjour Mathias ! 👋
+              Bonjour{firstName ? ` ${firstName}` : ""} ! 👋
             </h1>
             <p className="mt-2 max-w-lg text-sm text-white/85 lg:text-base">
               Découvrez de nouveaux lieux et gérez facilement vos réservations.

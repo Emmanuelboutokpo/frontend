@@ -31,6 +31,7 @@ import { Input } from "@/components/ui/input"
 import DestinationPicker from "./DestinationPicker"
 import { usePropertyStore, useSubCategories } from "@/store"
 import { tabs } from "@/data/common.data"
+import type { SearchQuery } from "@/types/types"
 
 type Category =
   | "hebergement"
@@ -42,7 +43,11 @@ function HeroSearch({destinations,}: { destinations: string[]}) {
   const data = usePropertyStore((state) => state.data)
   const resetFilters = usePropertyStore((state) => state.resetFilters)
   const setSearchQuery = usePropertyStore((state) => state.setSearchQuery)
-  const leisureSubcategories = useSubCategories(3)
+  const fetchEstablishments = usePropertyStore((state) => state.fetchEstablishments)
+  const leisureCategoryId = data.Categories.find((item) => item.slug === "loisir")?.id
+  const leisureSubcategories = useSubCategories(leisureCategoryId)
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchError, setSearchError] = useState("")
   const [category, setCategory] =
   useState<Category>("hebergement")
   const [destination, setDestination] = useState("")
@@ -72,40 +77,82 @@ function HeroSearch({destinations,}: { destinations: string[]}) {
     return `${year}-${month}-${day}`
   }
 
-  const submit = ( event: FormEvent<HTMLFormElement> ) => {
+  const submit = async ( event: FormEvent<HTMLFormElement> ) => {
     event.preventDefault()
-    const selectedCategory = data.Categories.find((item) => item.slug === category)
-    const selectedCommune = data.Communes.find(
-      (commune) => commune.name.toLocaleLowerCase() === destination.trim().toLocaleLowerCase()
-    )
-    const selectedSubcategory =
-      category === "loisir" && leisureType !== "all"
-        ? leisureSubcategories.find((subcategory) => subcategory.slug === leisureType)
-        : undefined
-    const guestValue =
-      category === "hebergement"
-        ? guests
-        : category === "restaurant"
-          ? restaurantPeople
-          : leisurePeople
-    const date =
-      category === "hebergement"
-        ? arrival
-        : category === "restaurant"
-          ? restaurantDate
-          : leisureDate
+    setSearchLoading(true)
+    setSearchError("")
 
-    resetFilters()
-    setSearchQuery({
-      categoryId: selectedCategory?.id,
-      subcategoryId: selectedSubcategory?.id,
-      communeId: selectedCommune?.id,
-      checkIn: date ? formatDateForUrl(date) : undefined,
-      checkOut: departure ? formatDateForUrl(departure) : undefined,
-      guests: Number.parseInt(guestValue, 10) || 0,
-    })
+    try {
+      let databaseData = usePropertyStore.getState().data
+      if (databaseData.Categories.length === 0) {
+        if (usePropertyStore.getState().establishmentsLoading) {
+          await new Promise<void>((resolve) => {
+            let unsubscribe = () => {};
+            unsubscribe = usePropertyStore.subscribe((state) => {
+              if (!state.establishmentsLoading) {
+                unsubscribe();
+                resolve();
+              }
+            });
+          })
+        } else {
+          await fetchEstablishments()
+        }
+        databaseData = usePropertyStore.getState().data
+      }
 
-    router.push("/explorer")
+      const selectedCategory = databaseData.Categories.find((item) => item.slug === category)
+      if (!selectedCategory) {
+        throw new Error("Cette catégorie n’est pas disponible dans la base de données.")
+      }
+      const selectedSubcategory =
+        category === "loisir" && leisureType !== "all"
+          ? databaseData.SubCategories.find(
+              (subcategory) =>
+                subcategory.category_id === selectedCategory?.id &&
+                subcategory.slug === leisureType
+            )
+          : undefined
+      const selectedCountry = databaseData.Countries.find(
+        (country) => country.name.toLocaleLowerCase() === destination.trim().toLocaleLowerCase()
+      )
+      const guestValue =
+        category === "hebergement"
+          ? guests
+          : category === "restaurant"
+            ? restaurantPeople
+            : leisurePeople
+
+      const query: SearchQuery = {
+        categoryId: selectedCategory?.id,
+        subcategoryId: selectedSubcategory?.id,
+        locationId: selectedCountry?.id,
+        destination: destination.trim() || undefined,
+        checkIn: category === "hebergement" && arrival ? formatDateForUrl(arrival) : undefined,
+        checkOut: category === "hebergement" && departure ? formatDateForUrl(departure) : undefined,
+        reservationDate:
+          category === "restaurant" && restaurantDate
+            ? formatDateForUrl(restaurantDate)
+            : undefined,
+        arrivalTime: category === "restaurant" ? restaurantTime || undefined : undefined,
+        activityDate:
+          category === "loisir" && leisureDate ? formatDateForUrl(leisureDate) : undefined,
+        activityTypeId: category === "loisir" ? selectedSubcategory?.id : undefined,
+        participants: category === "loisir" ? Number.parseInt(guestValue, 10) || undefined : undefined,
+        guests: category === "loisir" ? 0 : Number.parseInt(guestValue, 10) || 0,
+      }
+
+      resetFilters()
+      setSearchQuery(query)
+      await fetchEstablishments(query)
+      router.push("/explorer")
+    } catch (error) {
+      setSearchError(
+        error instanceof Error ? error.message : "La recherche a échoué. Réessayez."
+      )
+    } finally {
+      setSearchLoading(false)
+    }
   }
 
   return (
@@ -181,7 +228,7 @@ function HeroSearch({destinations,}: { destinations: string[]}) {
             onChange={setGuests}
           />
 
-          <SearchButton />
+          <SearchButton loading={searchLoading} />
         </div>
       )}
 
@@ -233,7 +280,7 @@ function HeroSearch({destinations,}: { destinations: string[]}) {
             onChange={setRestaurantPeople}
           />
 
-          <SearchButton />
+          <SearchButton loading={searchLoading} />
         </div>
       )}
 
@@ -294,8 +341,13 @@ function HeroSearch({destinations,}: { destinations: string[]}) {
             onChange={setLeisurePeople}
           />
 
-          <SearchButton />
+          <SearchButton loading={searchLoading} />
         </div>
+      )}
+      {searchError && (
+        <p role="alert" className="px-2 pt-2 text-sm text-red-700">
+          {searchError}
+        </p>
       )}
     </form>
   )
@@ -462,14 +514,15 @@ function GuestsField({
 /* SEARCH BUTTON */
 /* ========================================================= */
 
-function SearchButton() {
+function SearchButton({ loading }: { loading: boolean }) {
   return (
     <button
       type="submit"
-      className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 text-sm font-bold text-white transition hover:bg-[#0a3d71] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f6ad2e] focus-visible:ring-offset-2"
+      disabled={loading}
+      className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 text-sm font-bold text-white transition hover:bg-[#0a3d71] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f6ad2e] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70"
     >
-      <Search className="h-4 w-4" />
-      Rechercher
+      <Search className={`h-4 w-4 ${loading ? "animate-pulse" : ""}`} />
+      {loading ? "Recherche..." : "Rechercher"}
     </button>
   )
 }

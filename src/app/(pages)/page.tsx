@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import {
   ArrowRight,
@@ -21,8 +21,9 @@ import { categoryAccents, moods } from '@/data/common.data'
 import { useRouter } from "next/navigation"
 import { formatLocation } from '@/utils/selectors'
 import PropertyShowcase from '@/components/front-office/PropertyShowcase'
+import type { EntityId } from '@/types/types'
 
-function SectionHeading({ title, description, href }: { title: string; description: string; href?: string }) {
+function SectionHeading({ title, description, href, onAction, actionLabel }: { title: string; description: string; href?: string; onAction?: () => void; actionLabel?: string }) {
   return <div className="lg:mb-5 flex items-center justify-between gap-4">
     <div>
       <h2 className="text-xl font-extrabold tracking-[-0.04em] text-black sm:text-2xl">{title}</h2>
@@ -31,30 +32,46 @@ function SectionHeading({ title, description, href }: { title: string; descripti
     {href && <Button asChild variant="ghost" className="shrink-0 text-emerald-700 sm:flex">
       <Link href={href}>Explorer <ArrowRight className="ml-2 h-4 w-4" /></Link>
     </Button>}
+    {onAction && <Button variant="ghost" onClick={onAction} className="shrink-0 text-emerald-700 sm:flex" disabled={!actionLabel || actionLabel === "Localisation..."}>{actionLabel}</Button>}
   </div>
 }
 
 export default function Home() {
   const router = useRouter();
   const data = usePropertyStore((state) => state.data)
+  const popular = usePropertyStore((state) => state.popularEstablishments)
+  const nearby = usePropertyStore((state) => state.nearbyEstablishments)
+  const establishmentsError = usePropertyStore((state) => state.establishmentsError)
+  const establishmentsLoading = usePropertyStore((state) => state.establishmentsLoading)
+  const popularLoading = usePropertyStore((state) => state.popularLoading)
+  const fetchEstablishments = usePropertyStore((state) => state.fetchEstablishments)
+  const fetchPopularEstablishments = usePropertyStore((state) => state.fetchPopularEstablishments)
+  const requestStarted = useRef(false)
   const setSearchQuery = usePropertyStore((state) => state.setSearchQuery)
   const photos = useMemo(() => Object.fromEntries(data.Photos.filter((photo) => photo.is_cover).map((photo) => [photo.establishment_id, photo])), [data.Photos])
   const subcategorySlugs = useMemo(() => Object.fromEntries(data.SubCategories.map((subcategory) => [subcategory.id, subcategory.slug])), [data.SubCategories])
-  const destinations = useMemo(() => Array.from(new Set(data.Communes.map((commune) => commune.name))), [data.Communes])
+  const destinations = useMemo(
+    () => Array.from(new Set(
+      data.Establishments
+        .flatMap((establishment) => [establishment.address, establishment.location_name])
+        .filter((name): name is string => Boolean(name))
+    )),
+    [data.Establishments]
+  )
   const approved = data.Establishments.filter((property) => property.status === 'APPROVED')
-  const popular = [...approved].sort((first, second) => {
-    if (second.rating !== first.rating) {
-      return second.rating - first.rating
-    }
 
-    return second.id - first.id
-  })
-    .slice(0, 4)
-  const nearby = approved.filter((property) => !popular.some((featured) => featured.id === property.id)).sort((first, second) => second.rating - first.rating).slice(0, 4)
+  useEffect(() => {
+    if (requestStarted.current) return
+    requestStarted.current = true
+    void (async () => {
+      await fetchEstablishments().catch(() => undefined)
+      await fetchPopularEstablishments().catch(() => undefined)
+    })()
+  }, [fetchEstablishments, fetchPopularEstablishments])
 
   const handleCategoryClick = (
     e: React.MouseEvent,
-    category: { id: number; slug: string; name: string }
+    category: { id: EntityId; slug: string; name: string }
   ) => {
     e.preventDefault();
     setSearchQuery({
@@ -130,6 +147,13 @@ export default function Home() {
           </Link>
         })}
       </div>
+      {data.Categories.length === 0 && (
+        <p role={establishmentsError ? "alert" : undefined} className={`mt-4 text-sm ${establishmentsError ? "text-red-700" : "text-slate-500"}`}>
+          {establishmentsLoading
+            ? "Chargement des catégories depuis la base de données..."
+            : establishmentsError ?? "Aucune catégorie disponible pour le moment."}
+        </p>
+      )}
     </section>
 
     <section className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-12">
@@ -153,24 +177,30 @@ export default function Home() {
 
             return (
               <CarouselItem key={property.id} className="basis-[78%] pl-3 sm:basis-[42%] sm:pl-4 lg:basis-1/4">
-                <CarouselItem key={property.id} className="basis-[78%] pl-3 sm:basis-[42%] sm:pl-4 lg:basis-1/4">
-                  <PropertyShowcase
-                    key={property.id}
-                    property={property}
-                    photo={photos[property.id]}
-                    subcategorySlugs={subcategorySlugs}
-                    typeName={subcategory?.name ?? category?.name ?? "Établissement"}
-                    location={location}
-                  />
-                </CarouselItem>
-
-              </CarouselItem>)
-          }
-          )
-          }
+                <PropertyShowcase
+                  property={property}
+                  photo={photos[property.id]}
+                  subcategorySlugs={subcategorySlugs}
+                  typeName={subcategory?.name ?? category?.name ?? "Établissement"}
+                  location={location}
+                />
+              </CarouselItem>
+            );
+          })}
 
         </CarouselContent>
       </Carousel>
+      {popular.length === 0 && popularLoading && (
+        <p role="status" className="mt-4 text-sm text-slate-500">
+          Chargement des établissements populaires...
+        </p>
+      )}
+      {popular.length === 0 && establishmentsError && (
+        <p role="alert" className="mt-4 text-sm text-red-700">
+          {establishmentsError}{" "}
+          <Link href="/explorer" className="font-semibold underline">Réessayer dans l’explorateur</Link>
+        </p>
+      )}
     </section>
 
     <section className="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-12">
@@ -194,14 +224,14 @@ export default function Home() {
       </div>
     </section>
 
-    <section className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-12">
-      <SectionHeading title="Près de vous" description="Découvrez les meilleures adresses autour de vous." href="/explorer" />
+    {nearby.length > 0 && <section className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-12">
+      <SectionHeading title="Près de vous" description="Établissements de la base de données proches de votre position." />
       <p className=" lg:hidden mb-3 text-sm text-slate-500">
-        Découvrez les meilleures adresses autour de vous.
+        Établissements de la base de données proches de votre position.
       </p>
       <Carousel opts={{ align: 'start', loop: false }} className="-mx-1 px-1 sm:-mx-2 sm:px-2">
         <CarouselContent className="-ml-3 sm:-ml-4">
-          {nearby.map((property) => {
+          {nearby.slice(0, 4).map((property) => {
             const category = data.Categories.find((c) => c.id === property.category_id);
             const location = formatLocation(data, property) || property.address;
             const subcategory = data.SubCategories.find(
@@ -210,25 +240,19 @@ export default function Home() {
 
             return (
               <CarouselItem key={property.id} className="basis-[78%] pl-3 sm:basis-[42%] sm:pl-4 lg:basis-1/4">
-                <CarouselItem key={property.id} className="basis-[78%] pl-3 sm:basis-[42%] sm:pl-4 lg:basis-1/4">
-                  <PropertyShowcase
-                    key={property.id}
-                    property={property}
-                    photo={photos[property.id]}
-                    subcategorySlugs={subcategorySlugs}
-                    typeName={subcategory?.name ?? category?.name ?? "Établissement"}
-                    location={location}
-                  />
-                </CarouselItem>
-
-              </CarouselItem>)
-          }
-          )
-          }
+                <PropertyShowcase
+                  property={property}
+                  photo={photos[property.id]}
+                  subcategorySlugs={subcategorySlugs}
+                  typeName={subcategory?.name ?? category?.name ?? "Établissement"}
+                  location={location}
+                />
+              </CarouselItem>
+            );
+          })}
         </CarouselContent>
       </Carousel>
-
-    </section>
+    </section>}
 
     <section id="pourquoi" className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-12">
       <h2 className="text-2xl font-extrabold tracking-[-0.04em] text-black sm:text-3xl">Pourquoi choisir BestReserv ?</h2>

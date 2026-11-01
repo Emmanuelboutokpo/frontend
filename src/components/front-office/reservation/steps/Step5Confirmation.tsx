@@ -11,22 +11,23 @@ interface Props {
     categoryName: string;
   };
   checkIn: string;
-  checkOut: string;
+  checkOut: string | null;
   nights: number;
+  startTime: string | null;
+  endTime: string | null;
+  isAccommodation: boolean;
   adults: number;
   children: number;
   room: string;
-  client: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-    country: string;
-  };
-  pricePerNight: number;
+  unitPrice: number;
+  unitLabel: string;
+  priceUnits: number;
   subtotal: number;
   serviceFee: number;
+  taxAmount: number;
+  discountAmount: number;
   totalAmount: number;
+  specialRequests: string;
   currency: string;
   isSubmitting?: boolean;
   onConfirm: () => void;
@@ -38,14 +39,21 @@ export function Step4Confirmation({
   checkIn,
   checkOut,
   nights,
+  startTime,
+  endTime,
+  isAccommodation,
   adults,
   children,
   room,
-  client,
-  pricePerNight,
+  unitPrice,
+  unitLabel,
+  priceUnits,
   subtotal,
   serviceFee,
+  taxAmount,
+  discountAmount,
   totalAmount,
+  specialRequests,
   currency,
   isSubmitting,
   onConfirm,
@@ -56,10 +64,10 @@ export function Step4Confirmation({
       {/* Titre */}
       <header>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-          Vérifiez et confirmez
+          Vérifiez votre réservation
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Relisez les informations avant de valider votre réservation.
+          Relisez les informations avant de créer votre réservation et de procéder au paiement.
         </p>
       </header>
 
@@ -79,62 +87,40 @@ export function Step4Confirmation({
               <MapPin className="h-3 w-3" />
               {establishment.address}
             </p>
+            <p className="mt-1 text-[11px] text-slate-500">{establishment.categoryName}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4 border-t border-slate-100 p-5 sm:grid-cols-4">
           <InfoBox
             icon={Calendar}
-            label="Arrivée"
+            label={checkOut ? "Arrivée" : "Date"}
             value={new Date(checkIn).toLocaleDateString("fr-FR", {
               day: "2-digit",
               month: "short",
             })}
           />
-          <InfoBox
-            icon={Calendar}
-            label="Départ"
-            value={new Date(checkOut).toLocaleDateString("fr-FR", {
-              day: "2-digit",
-              month: "short",
-            })}
-          />
+          {checkOut && <InfoBox icon={Calendar} label="Départ" value={new Date(checkOut).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })} />}
+          {nights > 0 && <InfoBox icon={Calendar} label="Durée" value={`${nights} nuit${nights > 1 ? "s" : ""}`} />}
+          {startTime && <InfoBox icon={Calendar} label="Heure" value={startTime} />}
+          {endTime && <InfoBox icon={Calendar} label="Fin" value={endTime} />}
           <InfoBox
             icon={Users}
-            label="Voyageurs"
-            value={`${adults}${children > 0 ? ` + ${children}` : ""}`}
+            label={isAccommodation ? "Voyageurs" : "Participants"}
+            value={isAccommodation && children > 0 ? `${adults} adulte${adults > 1 ? "s" : ""} + ${children} enfant${children > 1 ? "s" : ""}` : `${adults + (isAccommodation ? children : 0)}`}
           />
-          <InfoBox
-            icon={Bed}
-            label="Chambre"
-            value={room}
-          />
+          {room && room !== "unspecified" && <InfoBox icon={Bed} label="Préférence" value={room} />}
         </div>
-      </section>
-
-      {/* Client */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <h2 className="mb-4 text-sm font-bold text-slate-900">
-          Informations du client
-        </h2>
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-          <Row label="Nom complet" value={`${client.firstName} ${client.lastName}`} />
-          <Row label="Email" value={client.email} />
-          <Row label="Téléphone" value={client.phone} />
-          <Row label="Pays" value={client.country} />
-        </dl>
       </section>
 
       {/* Prix */}
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <h2 className="mb-4 text-sm font-bold text-slate-900">
-          Détail du paiement        </h2>
+          Détail du devis
+        </h2>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between text-slate-600">
-            <span>
-              {pricePerNight.toLocaleString("fr-FR")} {currency} × {nights} nuit
-              {nights > 1 ? "s" : ""}
-            </span>
+            <span>{unitPrice > 0 ? `${unitPrice.toLocaleString("fr-FR")} ${currency} × ${priceUnits} ${unitLabel}` : "Montant calculé par l’établissement"}</span>
             <span className="font-semibold text-slate-900">
               {subtotal.toLocaleString("fr-FR")} {currency}
             </span>
@@ -145,8 +131,10 @@ export function Step4Confirmation({
               {serviceFee.toLocaleString("fr-FR")} {currency}
             </span>
           </div>
+          {taxAmount > 0 && <div className="flex justify-between text-slate-600"><span>Taxes</span><span className="font-semibold text-slate-900">{taxAmount.toLocaleString("fr-FR")} {currency}</span></div>}
+          {discountAmount > 0 && <div className="flex justify-between text-emerald-700"><span>Remise</span><span className="font-semibold">−{discountAmount.toLocaleString("fr-FR")} {currency}</span></div>}
           <div className="flex justify-between border-t border-slate-100 pt-3 text-base font-bold">
-            <span>Total à payer</span>
+            <span>Total estimé</span>
             <span className="text-emerald-800">
               {totalAmount.toLocaleString("fr-FR")} {currency}
             </span>
@@ -154,19 +142,18 @@ export function Step4Confirmation({
         </div>
       </section>
 
+      {specialRequests && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-5">
+          <h2 className="text-sm font-bold text-slate-900">Demande particulière</h2>
+          <p className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{specialRequests}</p>
+        </section>
+      )}
+
       {/* Info */}
       <div className="flex items-start gap-2 rounded-xl bg-emerald-50 p-4 text-xs text-emerald-800">
         <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
         <span>
-          En confirmant, vous acceptez nos{" "}
-          <a href="#" className="font-bold underline">
-            conditions d'utilisation
-          </a>{" "}
-          et notre{" "}
-          <a href="#" className="font-bold underline">
-            politique d'annulation
-          </a>
-          .
+          Votre réservation restera en attente tant que le paiement KKiaPay n’aura pas été vérifié. L’établissement pourra ensuite la traiter depuis son espace d’administration.
         </span>
       </div>
 
@@ -184,7 +171,7 @@ export function Step4Confirmation({
           disabled={isSubmitting}
           className="h-12 rounded-xl bg-emerald-700 px-8 font-semibold hover:bg-emerald-800"
         >
-          {isSubmitting ? "Traitement..." : "Confirmer la réservation"}
+          {isSubmitting ? "Création de la réservation..." : "Créer la réservation et continuer vers le paiement"}
         </Button>
       </div>
     </div>
@@ -207,19 +194,6 @@ function InfoBox({
         {label}
       </div>
       <div className="mt-1 text-xs font-semibold text-slate-800">{value}</div>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-        {label}
-      </dt>
-      <dd className="mt-1 truncate text-sm font-semibold text-slate-800">
-        {value}
-      </dd>
     </div>
   );
 }

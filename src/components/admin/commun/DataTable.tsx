@@ -11,16 +11,16 @@ export interface Column<T> {
   className?: string;
 }
 
-interface Props<T extends { id: number }> {
+interface Props<T extends { id: string | number }> {
   data: T[];
   columns: Column<T>[];
   onRowClick?: (item: T) => void;
   selectable?: boolean;
-  onSelectionChange?: (ids: number[]) => void;
+  onSelectionChange?: (ids: T["id"][]) => void;
   emptyMessage?: string;
 }
 
-export function DataTable<T extends { id: number }>({
+export function DataTable<T extends { id: string | number }>({
   data,
   columns,
   onRowClick,
@@ -28,7 +28,7 @@ export function DataTable<T extends { id: number }>({
   onSelectionChange,
   emptyMessage = "Aucun résultat",
 }: Props<T>) {
-  const [selected, setSelected] = useState<number[]>([]);
+  const [selected, setSelected] = useState<T["id"][]>([]);
 
   const allSelected = data.length > 0 && selected.length === data.length;
 
@@ -38,7 +38,7 @@ export function DataTable<T extends { id: number }>({
     onSelectionChange?.(next);
   };
 
-  const toggleOne = (id: number) => {
+  const toggleOne = (id: T["id"]) => {
     const next = selected.includes(id)
       ? selected.filter((x) => x !== id)
       : [...selected, id];

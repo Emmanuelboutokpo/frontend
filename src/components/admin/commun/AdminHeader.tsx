@@ -1,7 +1,8 @@
 "use client";
 
-import { Bell, Menu, Search, ChevronDown } from "lucide-react";
+import { Bell, Menu, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AdminAccountMenu } from "./AdminAccountMenu";
 
 export function AdminHeader({ onMenuClick }: { onMenuClick: () => void }) {
   return (
@@ -39,19 +40,7 @@ export function AdminHeader({ onMenuClick }: { onMenuClick: () => void }) {
           <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500" />
         </Button>
 
-        {/* Profil */}
-        <button className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-1.5 transition hover:border-emerald-200 hover:bg-emerald-50">
-          <div className="grid h-8 w-8 place-items-center rounded-full bg-emerald-700 text-xs font-bold text-white">
-            EA
-          </div>
-          <div className="hidden text-left sm:block">
-            <div className="text-xs font-semibold text-slate-900">
-              Mathias A.
-            </div>
-            <div className="text-[10px] text-slate-500">Administrateur</div>
-          </div>
-          <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
-        </button>
+        <AdminAccountMenu />
       </div>
     </header>
   );

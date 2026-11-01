@@ -1,24 +1,29 @@
 "use client";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { analyticsNumber, analyticsString, type AnalyticsRecord } from "@/store/useAdminAnalyticsStore";
 
-const data = [
-  { name: "Hébergements", value: 62, color: "#047857" },
-  { name: "Restaurants", value: 47, color: "#f59e0b" },
-  { name: "Loisirs", value: 31, color: "#3b82f6" },
-  { name: "Autres", value: 16, color: "#94a3b8" },
-];
+const COLORS = ["#047857", "#f59e0b", "#3b82f6", "#8b5cf6", "#94a3b8"];
 
-const total = data.reduce((sum, d) => sum + d.value, 0);
+export function CategoryPieChart({ rows, error }: { rows: AnalyticsRecord[]; error?: string }) {
+  const data = rows.flatMap((row, index) => {
+    const name = analyticsString(row, ["name", "category", "label", "category_name"]);
+    const value = analyticsNumber(row, ["value", "count", "total", "reservations", "establishments"]);
+    return name && value !== null ? [{ name, value, color: COLORS[index % COLORS.length] }] : [];
+  });
+  const total = data.reduce((sum, item) => sum + item.value, 0);
 
-export function CategoryPieChart() {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5">
       <h3 className="mb-5 text-sm font-bold text-slate-900">
         Répartition par catégorie
       </h3>
 
-      <div className="grid grid-cols-2 items-center gap-4">
+      {error ? (
+        <p role="alert" className="rounded-lg bg-rose-50 p-3 text-xs text-rose-700">{error}</p>
+      ) : data.length === 0 ? (
+        <p className="flex h-40 items-center justify-center text-sm text-slate-400">Aucune répartition disponible.</p>
+      ) : <div className="grid grid-cols-2 items-center gap-4">
         {/* Donut */}
         <div className="relative h-40">
           <ResponsiveContainer width="100%" height="100%">
@@ -73,7 +78,7 @@ export function CategoryPieChart() {
             );
           })}
         </div>
-      </div>
+      </div>}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import type { User, UserStatus, UserRole } from "@/types/users";
+import type { User, UserId, UserStatus, UserRole } from "@/types/users";
 
 // ---------------------------------------------------------------------
 // Formatage des dates
@@ -93,6 +93,7 @@ const AVATAR_COLORS = [
   "bg-violet-100 text-violet-700",
 ];
 
-export function getAvatarColor(id: number): string {
-  return AVATAR_COLORS[id % AVATAR_COLORS.length];
+export function getAvatarColor(id: UserId | number): string {
+  const index = String(id).split("").reduce((hash, character) => hash + character.charCodeAt(0), 0);
+  return AVATAR_COLORS[index % AVATAR_COLORS.length];
 }

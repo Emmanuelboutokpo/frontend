@@ -2,13 +2,14 @@
 
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
+import type { EntityId } from '@/types/types'
 
 export type BookingStatus = 'pending' | 'paid' | 'cancelled'
 export type PaymentProvider = "fedapay" | "kkpays" | "stripe";
 
 export type Booking = {
     id: string
-    propertyId: number
+    propertyId: EntityId
     propertyName: string
     propertyAddress: string
     checkIn: string

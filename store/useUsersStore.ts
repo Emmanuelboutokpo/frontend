@@ -1,115 +1,74 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import type { User, UserStats, UserFilters, UserRole } from "@/types/users";
+import { isTokenExpiredResponse, useAuthStore } from "@/store/authStore";
+import type {
+  AdminUserActivity,
+  AdminUserFavorite,
+  AdminUserReservation,
+  User,
+  UserFilters,
+  UserId,
+  UserRole,
+  UserStats,
+  UserStatus,
+} from "@/types/users";
 
-// =====================================================================
-// MOCK DATA — à remplacer par un vrai backend
-// =====================================================================
-const MOCK_USERS: User[] = [
-  {
-    id: 1, firstName: "Jean", lastName: "Dupont",
-    email: "jean@gmail.com", phone: "+229 97 12 34 56",
-    role: "CLIENT", status: "ACTIF",
-    avatar: "https://i.pravatar.cc/100?img=12",
-    registrationDate: "2025-04-12", lastLogin: new Date(Date.now() - 7200000).toISOString(),
-    createdAt: "2025-04-12",
-  },
-  {
-    id: 2, firstName: "Marie", lastName: "K.",
-    email: "marie@gmail.com", phone: "+229 96 45 78 12",
-    role: "CLIENT", status: "ACTIF",
-    avatar: "https://i.pravatar.cc/100?img=45",
-    registrationDate: "2025-03-03", lastLogin: new Date(Date.now() - 86400000).toISOString(),
-    createdAt: "2025-03-03",
-  },
-  {
-    id: 3, firstName: "Admin", lastName: "BestRev",
-    email: "admin@bestrev.com", phone: "+229 95 00 00 00",
-    role: "ADMIN", status: "ACTIF",
-    avatar: "https://i.pravatar.cc/100?img=33",
-    registrationDate: "2025-01-15", lastLogin: new Date(Date.now() - 300000).toISOString(),
-    createdAt: "2025-01-15",
-  },
-  {
-    id: 4, firstName: "Paul", lastName: "H.",
-    email: "paul@gmail.com", phone: "+229 64 32 11 22",
-    role: "CLIENT", status: "INACTIF",
-    avatar: "https://i.pravatar.cc/100?img=15",
-    registrationDate: "2024-02-20", lastLogin: new Date(Date.now() - 12 * 86400000).toISOString(),
-    createdAt: "2024-02-20",
-  },
-  {
-    id: 5, firstName: "Sophie", lastName: "L.",
-    email: "sophie@gmail.com", phone: "+229 67 89 45 21",
-    role: "CLIENT", status: "ACTIF",
-    avatar: "https://i.pravatar.cc/100?img=32",
-    registrationDate: "2025-01-05", lastLogin: new Date(Date.now() - 10800000).toISOString(),
-    createdAt: "2025-01-05",
-  },
-  {
-    id: 6, firstName: "Luc", lastName: "A.",
-    email: "luc@gmail.com", phone: "+229 61 23 45 67",
-    role: "PROPRIETAIRE", status: "EN_ATTENTE",
-    avatar: "https://i.pravatar.cc/100?img=14",
-    registrationDate: "2024-12-22", lastLogin: new Date(Date.now() - 172800000).toISOString(),
-    createdAt: "2024-12-22",
-  },
-  {
-    id: 7, firstName: "Aminata", lastName: "S.",
-    email: "aminata@gmail.com", phone: "+229 62 34 56 78",
-    role: "CLIENT", status: "ACTIF",
-    avatar: "https://i.pravatar.cc/100?img=47",
-    registrationDate: "2024-12-18", lastLogin: new Date(Date.now() - 14400000).toISOString(),
-    createdAt: "2024-12-18",
-  },
-  {
-    id: 8, firstName: "Koffi", lastName: "D.",
-    email: "koffi@gmail.com", phone: "+229 90 11 22 33",
-    role: "CLIENT", status: "SUSPENDU",
-    avatar: "https://i.pravatar.cc/100?img=8",
-    registrationDate: "2024-12-10", lastLogin: new Date(Date.now() - 8 * 86400000).toISOString(),
-    createdAt: "2024-12-10",
-  },
-  // Ajoute d'autres users pour tester la pagination
-  ...Array.from({ length: 20 }, (_, i) => ({
-    id: 100 + i,
-    firstName: `User${i + 1}`,
-    lastName: "Test",
-    email: `user${i + 1}@test.com`,
-    phone: `+229 90 00 00 ${String(i).padStart(2, "0")}`,
-    role: (i % 5 === 0 ? "ADMIN" : "CLIENT") as UserRole,
-    status: "ACTIF" as const,
-    registrationDate: "2025-01-01",
-    lastLogin: new Date().toISOString(),
-    createdAt: "2025-01-01",
-  })),
-];
+const API_URL = (
+  process.env.NEXT_PUBLIC_API_URL ?? "https://bestreservs-api.onrender.com"
+).replace(/\/+$/, "");
+const USERS_PATH = "/api/v1/admin/users";
+let listRequestId = 0;
+let statsRequestId = 0;
+let detailsRequestId = 0;
 
-// =====================================================================
-// STORE
-// =====================================================================
+type ApiRecord = Record<string, unknown>;
+
+type UserPage = {
+  items: unknown[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+type UserDetails = {
+  reservations: AdminUserReservation[];
+  favorites: AdminUserFavorite[];
+  activity: AdminUserActivity[];
+};
+
+type UserCreateInput = {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+};
+
+type UserUpdateInput = Partial<Pick<User, "firstName" | "lastName" | "email" | "phone">>;
+
 interface UsersState {
   users: User[];
+  total: number;
+  stats: UserStats;
   filters: UserFilters;
   page: number;
   perPage: number;
-
-  // CRUD
-  addUser: (user: Omit<User, "id" | "createdAt">) => User;
-  updateUser: (id: number, patch: Partial<User>) => void;
-  deleteUser: (id: number) => void;
-  changeRole: (id: number, role: UserRole) => void;
-  toggleStatus: (id: number) => void;
-
-  // Filtres & pagination
+  isLoading: boolean;
+  isLoadingStats: boolean;
+  isLoadingDetails: boolean;
+  error: string | null;
+  detailsError: string | null;
+  userDetails: UserDetails | null;
+  loadUsers: (filters: UserFilters, page: number, perPage: number) => Promise<void>;
+  loadStats: () => Promise<void>;
+  loadUserDetails: (id: UserId) => Promise<User>;
+  addUser: (user: UserCreateInput) => Promise<User>;
+  updateUser: (id: UserId, patch: UserUpdateInput) => Promise<User>;
+  changeRole: (id: UserId, role: UserRole) => Promise<User>;
+  changeStatus: (id: UserId, status: UserStatus) => Promise<User>;
+  disableUser: (id: UserId) => Promise<void>;
   setFilters: (patch: Partial<UserFilters>) => void;
   resetFilters: () => void;
   setPage: (page: number) => void;
   setPerPage: (n: number) => void;
-
-  // Sélecteurs calculés (via hook)
-  getFilteredUsers: () => User[];
-  getStats: () => UserStats;
 }
 
 const initialFilters: UserFilters = {
@@ -119,128 +78,311 @@ const initialFilters: UserFilters = {
   registrationDate: "all",
 };
 
-export const useUsersStore = create<UsersState>()(
-  persist(
-    (set, get) => ({
-      users: MOCK_USERS,
-      filters: initialFilters,
-      page: 1,
-      perPage: 8,
+const emptyStats: UserStats = {
+  total: 0,
+  clients: 0,
+  admins: 0,
+  owners: 0,
+  newThisMonth: 0,
+  active: 0,
+  inactive: 0,
+  pending: 0,
+  suspended: 0,
+};
 
-      // ------------------------------------------------------------------
-      // CRUD
-      // ------------------------------------------------------------------
-      addUser: (user) => {
-        const newUser: User = {
-          ...user,
-          id: Date.now(),
-          createdAt: new Date().toISOString(),
-        };
-        set((s) => ({ users: [newUser, ...s.users] }));
-        return newUser;
-      },
+function isRecord(value: unknown): value is ApiRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
-      updateUser: (id, patch) =>
-        set((s) => ({
-          users: s.users.map((u) => (u.id === id ? { ...u, ...patch } : u)),
-        })),
+function unwrap(body: unknown): unknown {
+  let value = body;
+  for (let depth = 0; depth < 3 && isRecord(value); depth += 1) {
+    if (!("data" in value) || value.data === value) break;
+    value = value.data;
+  }
+  return value;
+}
 
-      deleteUser: (id) =>
-        set((s) => ({ users: s.users.filter((u) => u.id !== id) })),
+function asString(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
 
-      changeRole: (id, role) =>
-        set((s) => ({
-          users: s.users.map((u) => (u.id === id ? { ...u, role } : u)),
-        })),
+function asCount(value: unknown): number {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 
-      toggleStatus: (id) =>
-        set((s) => ({
-          users: s.users.map((u) =>
-            u.id === id
-              ? {
-                  ...u,
-                  status: u.status === "ACTIF" ? "SUSPENDU" : "ACTIF",
-                }
-              : u
-          ),
-        })),
+function toRole(value: unknown): UserRole {
+  return value === "ADMIN" || value === "PROPRIETAIRE" ? value : "CLIENT";
+}
 
-      // ------------------------------------------------------------------
-      // FILTRES
-      // ------------------------------------------------------------------
-      setFilters: (patch) =>
-        set((s) => ({
-          filters: { ...s.filters, ...patch },
-          page: 1, // reset page quand on filtre
-        })),
+function toStatus(value: unknown): UserStatus {
+  return value === "INACTIF" || value === "EN_ATTENTE" || value === "SUSPENDU"
+    ? value
+    : "ACTIF";
+}
 
-      resetFilters: () => set({ filters: initialFilters, page: 1 }),
+function normalizeUser(value: unknown): User {
+  if (!isRecord(value) || typeof value.id !== "string" || typeof value.email !== "string") {
+    throw new Error("L’API a renvoyé un utilisateur invalide.");
+  }
 
-      setPage: (page) => set({ page }),
+  const profile = isRecord(value.profile) ? value.profile : {};
+  const firstName = asString(profile.firstName ?? value.firstName ?? value.first_name);
+  const lastName = asString(profile.lastName ?? value.lastName ?? value.last_name);
 
-      setPerPage: (n) => set({ perPage: n, page: 1 }),
+  return {
+    id: value.id,
+    firstName,
+    lastName,
+    email: value.email,
+    phone: asString(profile.phone ?? value.phone),
+    role: toRole(value.role),
+    status: toStatus(value.status),
+    provider: asString(value.provider),
+    avatar: asString(profile.img ?? value.avatar ?? value.picture) || undefined,
+    registrationDate: asString(value.created_at ?? value.createdAt) || undefined,
+    lastLogin: asString(value.last_login ?? value.lastLogin) || undefined,
+    createdAt: asString(value.created_at ?? value.createdAt),
+  };
+}
 
-      // ------------------------------------------------------------------
-      // SÉLECTEURS
-      // ------------------------------------------------------------------
-      getFilteredUsers: () => {
-        const { users, filters } = get();
-        const now = new Date();
+function normalizeList<T>(body: unknown): T[] {
+  const value = unwrap(body);
+  if (Array.isArray(value)) return value as T[];
+  if (isRecord(value) && Array.isArray(value.items)) return value.items as T[];
+  throw new Error("L’API a renvoyé une liste invalide.");
+}
 
-        return users.filter((u) => {
-          // Search
-          if (filters.search) {
-            const q = filters.search.toLowerCase();
-            const match =
-              u.firstName.toLowerCase().includes(q) ||
-              u.lastName.toLowerCase().includes(q) ||
-              u.email.toLowerCase().includes(q) ||
-              u.phone.includes(q);
-            if (!match) return false;
-          }
+function normalizePage(body: unknown): UserPage {
+  const value = unwrap(body);
+  if (!isRecord(value) || !Array.isArray(value.items)) {
+    throw new Error("L’API a renvoyé une page d’utilisateurs invalide.");
+  }
+  return {
+    items: value.items,
+    total: asCount(value.total),
+    limit: asCount(value.limit),
+    offset: asCount(value.offset),
+  };
+}
 
-          // Rôle
-          if (filters.role !== "ALL" && u.role !== filters.role) return false;
+function normalizeStats(body: unknown): UserStats {
+  const value = unwrap(body);
+  if (!isRecord(value)) throw new Error("L’API a renvoyé des statistiques invalides.");
+  const clients = asCount(value.clients);
+  const admins = asCount(value.admins);
+  return {
+    total: asCount(value.total),
+    clients,
+    admins,
+    owners: Math.max(0, asCount(value.total) - clients - admins),
+    newThisMonth: asCount(value.created_last_30_days),
+    active: asCount(value.active),
+    inactive: asCount(value.inactive),
+    pending: asCount(value.pending),
+    suspended: asCount(value.suspended),
+  };
+}
 
-          // Statut
-          if (filters.status !== "ALL" && u.status !== filters.status)
-            return false;
+function getErrorMessage(body: unknown, status: number): string {
+  if (!isRecord(body)) return `La requête a échoué (${status}).`;
+  const detail = body.detail ?? body.message;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((item) => isRecord(item) ? item.msg : undefined)
+      .filter((message): message is string => typeof message === "string" && message.length > 0);
+    if (messages.length > 0) return messages.join(", ");
+  }
+  return `La requête a échoué (${status}).`;
+}
 
-          // Date d'inscription
-          if (filters.registrationDate !== "all") {
-            const regDate = new Date(u.registrationDate || u.createdAt);
-            const diffDays =
-              (now.getTime() - regDate.getTime()) / (1000 * 60 * 60 * 24);
-            if (filters.registrationDate === "today" && diffDays > 1) return false;
-            if (filters.registrationDate === "week" && diffDays > 7) return false;
-            if (filters.registrationDate === "month" && diffDays > 30) return false;
-            if (filters.registrationDate === "year" && diffDays > 365) return false;
-          }
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = useAuthStore.getState().accessToken;
+  if (!token) throw new Error("Une session administrateur est requise.");
 
-          return true;
-        });
-      },
+  const response = await fetch(`${API_URL}${USERS_PATH}${path}`, {
+    ...options,
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...options.headers,
+    },
+  });
+  const body: unknown = await response.json().catch(() => null);
+  if (isTokenExpiredResponse(response.status, body) && useAuthStore.getState().accessToken === token) {
+    useAuthStore.getState().expireSession();
+  }
+  if (!response.ok) throw new Error(getErrorMessage(body, response.status));
+  return body as T;
+}
 
-      getStats: () => {
-        const { users } = get();
-        const now = new Date();
-        const thisMonth = users.filter((u) => {
-          const d = new Date(u.registrationDate || u.createdAt);
-          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-        });
+function userPath(id: UserId): string {
+  return `/${encodeURIComponent(id)}`;
+}
 
-        return {
-          total: users.length,
-          clients: users.filter((u) => u.role === "CLIENT").length,
-          admins: users.filter((u) => u.role === "ADMIN").length,
-          owners: users.filter((u) => u.role === "PROPRIETAIRE").length,
-          newThisMonth: thisMonth.length,
-        };
-      },
-    }),
-    {
-      name: "lr-users",
-      partialize: (state) => ({ users: state.users }),
+function upsertUser(users: User[], user: User): User[] {
+  const exists = users.some((item) => item.id === user.id);
+  return exists
+    ? users.map((item) => item.id === user.id ? user : item)
+    : [user, ...users];
+}
+
+async function refreshStatsAfterMutation(get: () => UsersState) {
+  try {
+    await get().loadStats();
+  } catch {
+    // loadStats stores the API error for the page to display.
+  }
+}
+
+export const useUsersStore = create<UsersState>((set, get) => ({
+  users: [],
+  total: 0,
+  stats: emptyStats,
+  filters: initialFilters,
+  page: 1,
+  perPage: 8,
+  isLoading: false,
+  isLoadingStats: false,
+  isLoadingDetails: false,
+  error: null,
+  detailsError: null,
+  userDetails: null,
+
+  loadUsers: async (filters, page, perPage) => {
+    const requestId = ++listRequestId;
+    set({ isLoading: true, error: null, filters, page, perPage });
+    try {
+      const params = new URLSearchParams({
+        limit: String(perPage),
+        offset: String((page - 1) * perPage),
+      });
+      if (filters.search.trim()) params.set("search", filters.search.trim());
+      if (filters.role !== "ALL") params.set("role", filters.role);
+      if (filters.status !== "ALL") params.set("status", filters.status);
+      const result = normalizePage(await request<unknown>(`?${params.toString()}`));
+      if (requestId === listRequestId) {
+        set({ users: result.items.map(normalizeUser), total: result.total });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Impossible de charger les utilisateurs.";
+      if (requestId === listRequestId) set({ error: message });
+      throw error;
+    } finally {
+      if (requestId === listRequestId) set({ isLoading: false });
     }
-  )
-);
+  },
+
+  loadStats: async () => {
+    const requestId = ++statsRequestId;
+    set({ isLoadingStats: true, error: null });
+    try {
+      const result = await request<unknown>("/stats");
+      if (requestId === statsRequestId) set({ stats: normalizeStats(result) });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Impossible de charger les statistiques utilisateurs.";
+      if (requestId === statsRequestId) set({ error: message });
+      throw error;
+    } finally {
+      if (requestId === statsRequestId) set({ isLoadingStats: false });
+    }
+  },
+
+  loadUserDetails: async (id) => {
+    const requestId = ++detailsRequestId;
+    set({ isLoadingDetails: true, detailsError: null, userDetails: null });
+    try {
+      const encodedId = userPath(id);
+      const [userBody, reservationsBody, favoritesBody, activityBody] = await Promise.all([
+        request<unknown>(encodedId),
+        request<unknown>(`${encodedId}/reservations?limit=100&offset=0`),
+        request<unknown>(`${encodedId}/favorites`),
+        request<unknown>(`${encodedId}/activity`),
+      ]);
+      const user = normalizeUser(unwrap(userBody));
+      const userDetails = {
+        reservations: normalizeList<AdminUserReservation>(reservationsBody),
+        favorites: normalizeList<AdminUserFavorite>(favoritesBody),
+        activity: normalizeList<AdminUserActivity>(activityBody),
+      };
+      if (requestId === detailsRequestId) {
+        set({ userDetails, users: upsertUser(get().users, user) });
+      }
+      return user;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Impossible de charger le détail utilisateur.";
+      if (requestId === detailsRequestId) set({ detailsError: message });
+      throw error;
+    } finally {
+      if (requestId === detailsRequestId) set({ isLoadingDetails: false });
+    }
+  },
+
+  addUser: async (input) => {
+    const body = await request<unknown>("", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    const user = normalizeUser(unwrap(body));
+    set((state) => ({ users: upsertUser(state.users, user), total: state.total + 1 }));
+    await refreshStatsAfterMutation(get);
+    return user;
+  },
+
+  updateUser: async (id, patch) => {
+    const apiPatch = {
+      ...(patch.firstName !== undefined ? { firstName: patch.firstName } : {}),
+      ...(patch.lastName !== undefined ? { lastName: patch.lastName } : {}),
+      ...(patch.email !== undefined ? { email: patch.email } : {}),
+      ...(patch.phone !== undefined ? { phone: patch.phone } : {}),
+    };
+    const body = await request<unknown>(userPath(id), {
+      method: "PATCH",
+      body: JSON.stringify(apiPatch),
+    });
+    const user = normalizeUser(unwrap(body));
+    set((state) => ({ users: upsertUser(state.users, user) }));
+    return user;
+  },
+
+  changeRole: async (id, role) => {
+    const body = await request<unknown>(`${userPath(id)}/role`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+    });
+    const user = normalizeUser(unwrap(body));
+    set((state) => ({ users: upsertUser(state.users, user) }));
+    return user;
+  },
+
+  changeStatus: async (id, status) => {
+    const body = await request<unknown>(`${userPath(id)}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
+    const user = normalizeUser(unwrap(body));
+    set((state) => ({ users: upsertUser(state.users, user) }));
+    await refreshStatsAfterMutation(get);
+    return user;
+  },
+
+  disableUser: async (id) => {
+    await request<unknown>(userPath(id), { method: "DELETE" });
+    set((state) => ({
+      users: state.users.filter((user) => user.id !== id),
+      total: Math.max(0, state.total - 1),
+    }));
+    await refreshStatsAfterMutation(get);
+  },
+
+  setFilters: (patch) => set((state) => ({
+    filters: { ...state.filters, ...patch },
+    page: 1,
+  })),
+  resetFilters: () => set({ filters: initialFilters, page: 1 }),
+  setPage: (page) => set({ page }),
+  setPerPage: (perPage) => set({ perPage, page: 1 }),
+}));

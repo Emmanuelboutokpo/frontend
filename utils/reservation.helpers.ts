@@ -13,7 +13,9 @@ export const STATUS_STYLES_RES: Record<
   CONFIRMEE: { label: "Confirmée", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   EN_COURS: { label: "En cours", className: "bg-blue-50 text-blue-700 border-blue-200" },
   TERMINEE: { label: "Terminée", className: "bg-slate-100 text-slate-600 border-slate-200" },
+  REFUSEE: { label: "Refusée", className: "bg-rose-50 text-rose-700 border-rose-200" },
   ANNULEE: { label: "Annulée", className: "bg-rose-50 text-rose-700 border-rose-200" },
+  EXPIREE: { label: "Expirée", className: "bg-slate-100 text-slate-600 border-slate-200" },
 };
 
 export const PAYMENT_METHOD_STYLES: Record<
@@ -23,6 +25,7 @@ export const PAYMENT_METHOD_STYLES: Record<
   CARTE_BANCAIRE: { label: "Carte bancaire", icon: "credit-card" },
   MOBILE_MONEY: { label: "Mobile Money", icon: "smartphone" },
   VIREMENT: { label: "Virement bancaire", icon: "landmark" },
+  SUR_PLACE: { label: "Paiement sur place", icon: "landmark" },
 };
 
 export const PAYMENT_STATUS_STYLES: Record<

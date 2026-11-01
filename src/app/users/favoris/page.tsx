@@ -47,22 +47,22 @@ export default function UserFavoritesPage() {
       ),
     [data.SubCategories]
   );
+  const getCategorySlug = (establishment: (typeof favorites)[number]) =>
+    data.Categories.find((category) => category.id === establishment.category_id)?.slug ??
+    establishment.category?.slug;
 
   // ----- Filtrage par tab -----
   const filtered = useMemo(() => {
     if (tab === "all") return favorites;
-    if (tab === "HEBERGEMENT") return favorites.filter((f) => f.category_id === 1);
-    if (tab === "RESTAURANT") return favorites.filter((f) => f.category_id === 2);
-    if (tab === "LOISIR") return favorites.filter((f) => f.category_id === 3);
-    return favorites;
-  }, [favorites, tab]);
+    return favorites.filter((establishment) => getCategorySlug(establishment) === tab.toLowerCase());
+  }, [favorites, tab, data.Categories]);
 
   // ----- Tabs -----
   const tabs: Tab[] = [
     { value: "all", label: "Tous", count: favorites.length },
-    { value: "HEBERGEMENT", label: "Hébergements", count: favorites.filter((f) => f.category_id === 1).length },
-    { value: "RESTAURANT", label: "Restaurants", count: favorites.filter((f) => f.category_id === 2).length },
-    { value: "LOISIR", label: "Loisirs", count: favorites.filter((f) => f.category_id === 3).length },
+    { value: "HEBERGEMENT", label: "Hébergements", count: favorites.filter((f) => getCategorySlug(f) === "hebergement").length },
+    { value: "RESTAURANT", label: "Restaurants", count: favorites.filter((f) => getCategorySlug(f) === "restaurant").length },
+    { value: "LOISIR", label: "Loisirs", count: favorites.filter((f) => getCategorySlug(f) === "loisir").length },
   ];
 
   // ----- Groupement par pays + catégorie -----

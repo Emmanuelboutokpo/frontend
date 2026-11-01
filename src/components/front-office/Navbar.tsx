@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import AuthDialog from '@/components/front-office/AuthDialog'
- import { CalendarDays, Heart, LogOut, Menu, UserRound, X } from 'lucide-react'
+import { LogOut, Menu, UserRound } from 'lucide-react'
 import { useAuthStore } from '@/store'
 
 const navItems = [
@@ -25,12 +25,22 @@ function AccountButton() {
   const firstName = useAuthStore((state) => state.firstName)
   const lastName = useAuthStore((state) => state.lastName)
   const avatar = useAuthStore((state) => state.avatar)
+  const role = useAuthStore((state) => state.role)
   const signOut = useAuthStore((state) => state.signOut)
   const [authOpen, setAuthOpen] = useState(false)
   const initials = `${firstName?.[0] ?? ''}${lastName?.[0] ?? ''}`.toUpperCase() || 'U'
+  const homePath = role === 'ADMIN' ? '/admin' : '/users'
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      router.push('/')
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'La déconnexion a échoué.')
+    }
+  }
 
   if (!isAuthenticated) return <>
-    <Button type="button" onClick={() => setAuthOpen(true)} className="h-9 rounded-full bg-black px-5 text-xs font-bold text-white shadow-sm hover:bg-[#0a3d71]">Se connecter</Button><AuthDialog open={authOpen} onOpenChange={setAuthOpen} title="Connectez-vous à votre compte" /></>
+    <Button type="button" onClick={() => setAuthOpen(true)} className="h-9 rounded-full bg-black px-5 text-xs font-bold text-white shadow-sm hover:bg-[#0a3d71]">Se connecter</Button><AuthDialog open={authOpen} onOpenChange={setAuthOpen} onAuthenticated={() => router.push(useAuthStore.getState().role === 'ADMIN' ? '/admin' : '/users')} title="Connectez-vous à votre compte" /></>
 
   return <DropdownMenu>
     <DropdownMenuTrigger asChild>
@@ -46,10 +56,10 @@ function AccountButton() {
         {firstName} {lastName}
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
-      <DropdownMenuItem onSelect={() => router.push('/users/')}>
-        <UserRound className="h-4 w-4" />Mon espace client</DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => router.push(homePath)}>
+        <UserRound className="h-4 w-4" />{role === 'ADMIN' ? 'Espace administration' : 'Mon espace utilisateur'}</DropdownMenuItem>
       <DropdownMenuSeparator />
-      <DropdownMenuItem variant="destructive" onSelect={() => { signOut(); router.push('/') }}>
+      <DropdownMenuItem variant="destructive" onSelect={() => { void handleSignOut() }}>
         <LogOut className="h-4 w-4" />Déconnexion
       </DropdownMenuItem>
     </DropdownMenuContent>

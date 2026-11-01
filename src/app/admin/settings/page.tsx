@@ -25,7 +25,7 @@ export default function AdminSettingsPage() {
         </nav>
         <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Paramètres</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Gérez la configuration de votre plateforme BestRev.
+          Gérez la configuration de votre plateforme BestReservs.
         </p>
       </div>
 
