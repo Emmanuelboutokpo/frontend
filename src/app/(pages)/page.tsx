@@ -119,7 +119,7 @@ export default function Home() {
     <section className="mx-auto max-w-7xl px-5 pb-10 pt-60 sm:pt-32 sm:px-8 lg:px-12">
       <SectionHeading title="Que recherchez-vous ?" description="Choisissez votre envie et laissez BestReserv vous guider." />
       <p className=" lg:hidden mb-3 text-sm text-slate-500">
-        Choisissez votre envie et laissez BestReserv vous guider.
+        Choisissez votre envie et laissez BestReservs vous guider.
       </p>
       <div className="grid gap-4 md:grid-cols-3">
         {data.Categories.map((category, index) => {

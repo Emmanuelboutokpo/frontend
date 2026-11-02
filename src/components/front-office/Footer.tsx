@@ -60,17 +60,17 @@ export default function Footer() {
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#f6ad2e]" />Cotonou, Bénin</li>
             <li className="flex items-center gap-2">
               <Mail className="h-4 w-4 shrink-0 text-[#f6ad2e]" />
-              <a href="mailto:contact@bestreserv.com" className="hover:text-[#f6ad2e]">contact@bestreserv.com</a>
+              <a href="mailto:contact@bestreservs.com" className="hover:text-[#f6ad2e]">contact@bestreservs.com</a>
             </li>
             <li className="flex items-center gap-2">
               <Phone className="h-4 w-4 shrink-0 text-[#f6ad2e]" />
-              <a href="tel:+2290123456789" className="hover:text-[#f6ad2e]">+229 0196673274</a>
+              <a href="tel:+22996673274" className="hover:text-[#f6ad2e]">+229 0196673274</a>
             </li>
           </ul>
         </div>
       </div>
       <div className="mt-10 flex flex-col gap-2 border-t border-white/15 pt-5 text-center text-xs text-white/55 sm:flex-row sm:items-center sm:justify-between">
-        <span>© {year} BestReserv. Tous droits réservés.</span>
+        <span>© {year} BestReservs. Tous droits réservés.</span>
       </div>
     </div>
   </footer>

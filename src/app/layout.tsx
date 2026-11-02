@@ -24,7 +24,7 @@ const playfair = Playfair_Display({
 
 
 export const metadata: Metadata = {
-  title: "BestReserv | Découvrez, réservez, profitez",
+  title: "BestReservs | Découvrez, réservez, profitez",
   description: "Hébergements, restaurants et loisirs sélectionnés au Bénin.",
 };
 

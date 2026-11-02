@@ -40,8 +40,8 @@ export default function ContactPage() {
       id: 1,
       icon: "mail",
       label: "Email",
-      value: "contact@bestreserv.com",
-      href: "mailto:contact@bestreserv.com",
+      value: "contact@bestreservs.com",
+      href: "mailto:contact@bestreservs.com",
       description: "Réponse sous 24h ouvrées",
     },
     {
@@ -101,11 +101,11 @@ export default function ContactPage() {
       id: 4,
       question: "Comment signaler un problème ?",
       answer:
-        "Contactez-nous via le formulaire en choisissant « Support technique », ou par email à support@bestreserv.com. Nous traitons chaque demande sous 24h ouvrées.",
+        "Contactez-nous via le formulaire en choisissant « Support technique », ou par email à contact@bestreservs.com. Nous traitons chaque demande sous 24h ouvrées.",
     },
     {
       id: 5,
-      question: "BestReserv est-il disponible dans mon pays ?",
+      question: "BestReservs est-il disponible dans mon pays ?",
       answer:
         "Nous sommes actuellement présents au Bénin, Togo et Côte d'Ivoire. D'autres pays d'Afrique de l'Ouest seront ajoutés prochainement.",
     },
@@ -145,7 +145,7 @@ export default function ContactPage() {
     title: "Une question urgente ?",
     description:
       "Notre équipe support est disponible par WhatsApp pour vous répondre en temps réel.",
-    primaryCta: { label: "Discuter sur WhatsApp", href: "https://wa.me/22997000000" },
+    primaryCta: { label: "Discuter sur WhatsApp", href: "https://wa.me/22996673274" },
     secondaryCta: { label: "Voir la FAQ", href: "#faq" },
   };
 

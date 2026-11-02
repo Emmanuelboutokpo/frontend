@@ -34,7 +34,7 @@ export default function AboutPage() {
   badge: "Notre mission",
   title: "Rendre le voyage accessible à tous.",
   description:
-    "BestReserv est né d'un constat simple : trouver un hébergement, un restaurant ou un lieu de loisir en Afrique reste compliqué. Nous avons créé une plateforme unique, moderne et adaptée aux réalités locales, pour connecter voyageurs et établissements en toute confiance.",
+    "BestReservs est né d'un constat simple : trouver un hébergement, un restaurant ou un lieu de loisir en Afrique reste compliqué. Nous avons créé une plateforme unique, moderne et adaptée aux réalités locales, pour connecter voyageurs et établissements en toute confiance.",
   bullets: [
     "Une plateforme pensée pour le marché africain",
     "Des établissements vérifiés manuellement",
@@ -101,7 +101,7 @@ const ABOUT_STORY = [
     year: "2025",
     title: "Lancement officiel",
     description:
-      "BestReserv ouvre au public avec une ambition : devenir la référence en Afrique de l'Ouest.",
+      "BestReservs ouvre au public avec une ambition : devenir la référence en Afrique de l'Ouest.",
   },
   {
     id: 4,
@@ -112,39 +112,8 @@ const ABOUT_STORY = [
   },
 ];
 
-const ABOUT_TEAM = [
-  {
-    id: 1,
-    name: "Aïcha Bello",
-    role: "Fondatrice & CEO",
-    avatar: "https://i.pravatar.cc/200?img=47",
-    linkedin: "#",
-  },
-  {
-    id: 2,
-    name: "Kofi Mensah",
-    role: "Directeur Technique",
-    avatar: "https://i.pravatar.cc/200?img=12",
-    linkedin: "#",
-  },
-  {
-    id: 3,
-    name: "Sophie Dossou",
-    role: "Responsable Partenariats",
-    avatar: "https://i.pravatar.cc/200?img=32",
-    linkedin: "#",
-  },
-  {
-    id: 4,
-    name: "Yves Adékambi",
-    role: "Responsable Client",
-    avatar: "https://i.pravatar.cc/200?img=15",
-    linkedin: "#",
-  },
-];
-
 const ABOUT_CTA = {
-  title: "Prêt à vivre l'expérience BestReserv ?",
+  title: "Prêt à vivre l'expérience BestReservs ?",
   description:
     "Rejoignez des milliers de voyageurs et découvrez les meilleures adresses d'Afrique.",
   primaryCta: { label: "Explorer", href: "/pages/explorer" },
@@ -161,7 +130,7 @@ const ABOUT_CTA = {
         <div className="relative mx-auto flex h-full max-w-4xl flex-col items-center justify-center px-4 text-center">
           <span className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white backdrop-blur">
             <Sparkles className="h-3 w-3" />
-            À propos de BestReserv
+            À propos de BestReservs
           </span>
 
           <h1 className="text-3xl font-bold leading-tight text-white lg:text-5xl">
@@ -171,7 +140,7 @@ const ABOUT_CTA = {
           </h1>
 
           <p className="hidden sm:block mt-4 max-w-2xl text-sm text-white/85 lg:text-base">
-            BestReserv est né d'une idée simple : offrir aux voyageurs africains
+            BestReservs est né d'une idée simple : offrir aux voyageurs africains
             une plateforme unique pour réserver hébergements, restaurants et
             loisirs. Moderne, fiable et pensée pour nos réalités.
           </p>
@@ -310,7 +279,7 @@ const ABOUT_CTA = {
             De l'idée à la réalité
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground lg:text-base">
-            Les grandes étapes qui ont marqué l'aventure BestReserv.
+            Les grandes étapes qui ont marqué l'aventure BestReservs.
           </p>
         </div>
 
