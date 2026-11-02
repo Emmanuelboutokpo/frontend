@@ -6,6 +6,7 @@ import {
   ArrowRight,
   CalendarDays,
   Heart,
+  LoaderCircle,
   Send,
   ShieldCheck,
   Star,
@@ -148,11 +149,18 @@ export default function Home() {
         })}
       </div>
       {data.Categories.length === 0 && (
-        <p role={establishmentsError ? "alert" : undefined} className={`mt-4 text-sm ${establishmentsError ? "text-red-700" : "text-slate-500"}`}>
-          {establishmentsLoading
-            ? "Chargement des catégories depuis la base de données..."
-            : establishmentsError ?? "Aucune catégorie disponible pour le moment."}
-        </p>
+        establishmentsLoading ? (
+          <div role="status" className="mt-6 flex justify-center">
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 ring-1 ring-amber-100">
+              <LoaderCircle className="h-7 w-7 animate-spin text-amber-600" aria-hidden="true" />
+            </span>
+            <span className="sr-only">Chargement des catégories…</span>
+          </div>
+        ) : (
+          <p role={establishmentsError ? "alert" : undefined} className={`mt-4 text-sm ${establishmentsError ? "text-red-700" : "text-slate-500"}`}>
+            {establishmentsError ?? "Aucune catégorie disponible pour le moment."}
+          </p>
+        )
       )}
     </section>
 
@@ -191,9 +199,15 @@ export default function Home() {
         </CarouselContent>
       </Carousel>
       {popular.length === 0 && popularLoading && (
-        <p role="status" className="mt-4 text-sm text-slate-500">
-          Chargement des établissements populaires...
-        </p>
+        <div role="status" className="mt-6 flex justify-center">
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 ring-1 ring-amber-100">
+              <LoaderCircle className="h-7 w-7 animate-spin text-amber-600" aria-hidden="true" />
+            </span>
+            <p role="status" className="mt-4 text-sm text-slate-500">
+             Chargement des établissements populaires...
+            </p>
+          </div>
+        
       )}
       {popular.length === 0 && establishmentsError && (
         <p role="alert" className="mt-4 text-sm text-red-700">
