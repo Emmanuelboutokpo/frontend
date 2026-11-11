@@ -4,7 +4,14 @@ import { isTokenExpiredResponse, useAuthStore } from "@/store/authStore";
 const API_URL = (
   process.env.NEXT_PUBLIC_API_URL ?? "https://bestreservs-api.onrender.com"
 ).replace(/\/+$/, "");
-const ACCOUNTS_PATH = "/api/v1/accounts";
+const ADMIN_ACCOUNTS_PATH = "/api/v1/accounts";
+const OWNER_ACCOUNTS_PATH = "/api/v1/owners/accounts";
+
+function accountsPath(): string {
+  return useAuthStore.getState().role === "PROPRIETAIRE"
+    ? OWNER_ACCOUNTS_PATH
+    : ADMIN_ACCOUNTS_PATH;
+}
 
 type ApiRecord = Record<string, unknown>;
 
@@ -63,7 +70,7 @@ async function request(path: string, options: RequestInit = {}): Promise<unknown
   const token = useAuthStore.getState().accessToken;
   if (!token) throw new Error("Une session administrateur est requise.");
 
-  const response = await fetch(`${API_URL}${ACCOUNTS_PATH}${path}`, {
+  const response = await fetch(`${API_URL}${accountsPath()}${path}`, {
     ...options,
     headers: {
       Accept: "application/json",

@@ -12,12 +12,19 @@ import type {
 const API_URL = (
   process.env.NEXT_PUBLIC_API_URL ?? "https://bestreservs-api.onrender.com"
 ).replace(/\/+$/, "");
-const PAYMENTS_PATH = "/api/v1/admin/payments";
+const ADMIN_PAYMENTS_PATH = "/api/v1/admin/payments";
+const OWNER_PAYMENTS_PATH = "/api/v1/owners/payments";
 let listRequestId = 0;
 let statsRequestId = 0;
 let detailsRequestId = 0;
 
 type ApiRecord = Record<string, unknown>;
+
+function paymentsPath(): string {
+  return useAuthStore.getState().role === "PROPRIETAIRE"
+    ? OWNER_PAYMENTS_PATH
+    : ADMIN_PAYMENTS_PATH;
+}
 
 interface PaymentPage {
   items: AdminPayment[];
@@ -81,7 +88,7 @@ function errorMessage(body: unknown, status: number): string {
 async function request(path: string): Promise<unknown> {
   const token = useAuthStore.getState().accessToken;
   if (!token) throw new Error("Une session administrateur est requise.");
-  const response = await fetch(`${API_URL}${PAYMENTS_PATH}${path}`, {
+  const response = await fetch(`${API_URL}${paymentsPath()}${path}`, {
     headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
   });
   const body: unknown = await response.json().catch(() => null);

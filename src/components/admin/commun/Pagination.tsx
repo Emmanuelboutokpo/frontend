@@ -13,11 +13,12 @@ import {
 interface Props {
   page: number;
   perPage: number;
-  total: number;
+  total: number | null;
   onPageChange: (p: number) => void;
   onPerPageChange?: (n: number) => void;
   itemLabel?: string;
   perPageOptions?: number[];
+  hasNextPage?: boolean;
 }
 
 export function Pagination({
@@ -28,21 +29,18 @@ export function Pagination({
   onPerPageChange,
   itemLabel = "résultats",
   perPageOptions = [8, 16, 32],
+  hasNextPage,
 }: Props) {
-  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  const totalPages = total === null ? page : Math.max(1, Math.ceil(total / perPage));
   const start = total === 0 ? 0 : (page - 1) * perPage + 1;
-  const end = Math.min(page * perPage, total);
+  const end = total === null ? page * perPage : Math.min(page * perPage, total);
 
   return (
     <div className="flex flex-col items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 sm:flex-row">
       <p className="text-xs text-slate-500">
-        Affichage de{" "}
-        <strong className="text-slate-700">{start}</strong> à{" "}
-        <strong className="text-slate-700">{end}</strong> sur{" "}
-        <strong className="text-slate-700">
-          {total.toLocaleString("fr-FR")}
-        </strong>{" "}
-        {itemLabel}
+        {total === null
+          ? `Page ${page} · ${itemLabel}`
+          : <>Affichage de <strong className="text-slate-700">{start}</strong> à <strong className="text-slate-700">{end}</strong> sur <strong className="text-slate-700">{total.toLocaleString("fr-FR")}</strong> {itemLabel}</>}
       </p>
 
       <div className="flex items-center gap-1">
@@ -56,7 +54,7 @@ export function Pagination({
           <ChevronLeft className="h-3.5 w-3.5" />
         </Button>
 
-        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(
+        {total !== null && Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(
           (p) => (
             <Button
               key={p}
@@ -72,10 +70,10 @@ export function Pagination({
           )
         )}
 
-        {totalPages > 5 && (
+        {total !== null && totalPages > 5 && (
           <span className="px-1 text-xs text-slate-400">...</span>
         )}
-        {totalPages > 5 && (
+        {total !== null && totalPages > 5 && (
           <Button
             variant="ghost"
             size="icon"
@@ -90,7 +88,7 @@ export function Pagination({
           variant="outline"
           size="icon"
           className="h-8 w-8 rounded-lg"
-          disabled={page === totalPages}
+          disabled={hasNextPage === undefined ? page === totalPages : !hasNextPage}
           onClick={() => onPageChange(page + 1)}
         >
           <ChevronRight className="h-3.5 w-3.5" />

@@ -4,7 +4,8 @@ import { isTokenExpiredResponse, useAuthStore } from "@/store/authStore";
 const API_URL = (
   process.env.NEXT_PUBLIC_API_URL ?? "https://bestreservs-api.onrender.com"
 ).replace(/\/+$/, "");
-const BASE_PATH = "/api/v1/admin/stats";
+const ADMIN_BASE_PATH = "/api/v1/admin/stats";
+const OWNER_BASE_PATH = "/api/v1/owners/stats";
 
 export type AnalyticsRecord = Record<string, unknown>;
 
@@ -19,10 +20,17 @@ export interface AdminAnalyticsData {
   activities: AnalyticsRecord[];
   reservationChart: AnalyticsRecord[];
   categoryChart: AnalyticsRecord[];
+  revenueChart: AnalyticsRecord[];
 }
 
 type AnalyticsKey = keyof AdminAnalyticsData;
 type AnalyticsErrors = Partial<Record<AnalyticsKey, string>>;
+
+function analyticsBasePath(): string {
+  return useAuthStore.getState().role === "PROPRIETAIRE"
+    ? OWNER_BASE_PATH
+    : ADMIN_BASE_PATH;
+}
 
 interface AdminAnalyticsState {
   data: AdminAnalyticsData;
@@ -42,6 +50,7 @@ const emptyData: AdminAnalyticsData = {
   activities: [],
   reservationChart: [],
   categoryChart: [],
+  revenueChart: [],
 };
 
 function isRecord(value: unknown): value is AnalyticsRecord {
@@ -70,7 +79,7 @@ function errorMessage(body: unknown, status: number): string {
 async function request(path: string): Promise<unknown> {
   const token = useAuthStore.getState().accessToken;
   if (!token) throw new Error("Une session administrateur est requise.");
-  const response = await fetch(`${API_URL}${BASE_PATH}${path}`, {
+  const response = await fetch(`${API_URL}${analyticsBasePath()}${path}`, {
     headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
   });
   const body: unknown = await response.json().catch(() => null);
@@ -150,18 +159,29 @@ export const useAdminAnalyticsStore = create<AdminAnalyticsState>((set) => ({
 
   loadDashboard: async () => {
     set({ isLoading: true, errors: {} });
-    const requests: { key: AnalyticsKey; path: string; kind: "record" | "rows" }[] = [
-      { key: "overview", path: "/overview", kind: "record" },
-      { key: "users", path: "/users", kind: "record" },
-      { key: "establishments", path: "/establishments", kind: "record" },
-      { key: "reservations", path: "/reservations", kind: "record" },
-      { key: "revenue", path: "/revenue", kind: "record" },
-      { key: "destinations", path: "/top-destinations?limit=4", kind: "rows" },
-      { key: "topEstablishments", path: "/top-establishments?limit=4", kind: "rows" },
-      { key: "activities", path: "/recent-activities?limit=4&offset=0", kind: "rows" },
-      { key: "reservationChart", path: "/charts/reservations?period=month", kind: "rows" },
-      { key: "categoryChart", path: "/charts/categories", kind: "rows" },
-    ];
+    const isOwner = useAuthStore.getState().role === "PROPRIETAIRE";
+    const requests: { key: AnalyticsKey; path: string; kind: "record" | "rows" }[] = isOwner
+      ? [
+          { key: "establishments", path: "/establishments", kind: "record" },
+          { key: "reservations", path: "/reservations", kind: "record" },
+          { key: "revenue", path: "/revenue", kind: "record" },
+          { key: "destinations", path: "/top-destinations?limit=5", kind: "rows" },
+          { key: "topEstablishments", path: "/top-establishments?limit=5", kind: "rows" },
+          { key: "activities", path: "/recent-activities?limit=5&offset=0", kind: "rows" },
+          { key: "reservationChart", path: "/charts/reservations?period=month", kind: "rows" },
+          { key: "categoryChart", path: "/charts/categories", kind: "rows" },
+          { key: "revenueChart", path: "/charts/revenue?period=month&currency=XOF", kind: "rows" },
+        ]
+      : [
+          { key: "overview", path: "/overview", kind: "record" },
+          { key: "users", path: "/users", kind: "record" },
+          { key: "establishments", path: "/establishments", kind: "record" },
+          { key: "revenue", path: "/revenue", kind: "record" },
+          { key: "destinations", path: "/top-destinations?limit=4", kind: "rows" },
+          { key: "topEstablishments", path: "/top-establishments?limit=4", kind: "rows" },
+          { key: "activities", path: "/recent-activities?limit=4&offset=0", kind: "rows" },
+          { key: "categoryChart", path: "/charts/categories", kind: "rows" },
+        ];
 
     const results = await Promise.all(requests.map(async ({ key, path, kind }) => {
       try {

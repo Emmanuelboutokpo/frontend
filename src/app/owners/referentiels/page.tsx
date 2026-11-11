@@ -20,7 +20,6 @@ import { AdminPageHeader } from "@/components/admin/commun/AdminPageHeader";
 import { ConfirmModal } from "@/components/admin/commun/ConfirmModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import {
   Dialog,
@@ -30,10 +29,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAdminEstablishmentsStore } from "@/store/useAdminEstablishmentsStore";
 import type { AdminCategory, AdminLocation } from "@/types/establishment";
 
-type CatalogType = "category" | "subcategory" | "location" | "amenity";
+type CatalogType = "subcategory" | "location" | "amenity";
 type CatalogTab = "all" | "categories" | "locations" | "amenities";
 type CatalogForm = {
   id?: string;
@@ -66,7 +73,6 @@ const EMPTY: CatalogForm = {
 };
 
 const TYPE_LABELS: Record<CatalogType, string> = {
-  category: "catégorie",
   subcategory: "sous-catégorie",
   location: "lieu",
   amenity: "équipement",
@@ -84,7 +90,7 @@ export default function AdminReferencesPage() {
   const locations = useAdminEstablishmentsStore((state) => state.locations);
   const amenities = useAdminEstablishmentsStore((state) => state.amenities);
   const loadReferences = useAdminEstablishmentsStore((state) => state.loadReferences);
-  const [type, setType] = useState<CatalogType>("category");
+  const [type, setType] = useState<CatalogType>("subcategory");
   const [tab, setTab] = useState<CatalogTab>("all");
   const [search, setSearch] = useState("");
   const [form, setForm] = useState<CatalogForm>(EMPTY);
@@ -123,16 +129,16 @@ export default function AdminReferencesPage() {
         || category.subcategories?.length),
     [categories, query],
   );
+  const visibleAmenities = useMemo(
+    () => amenities.filter((amenity) => !query || amenity.name.toLocaleLowerCase("fr").includes(query)),
+    [amenities, query],
+  );
   const visibleLocations = useMemo(
     () => locations.filter((location) => !query
       || location.name.toLocaleLowerCase("fr").includes(query)
       || location.type.toLocaleLowerCase("fr").includes(query)
       || location.country_code.toLocaleLowerCase("fr").includes(query)),
     [locations, query],
-  );
-  const visibleAmenities = useMemo(
-    () => amenities.filter((amenity) => !query || amenity.name.toLocaleLowerCase("fr").includes(query)),
-    [amenities, query],
   );
 
   const beginCreate = (catalogType: CatalogType, categoryId = "") => {
@@ -144,7 +150,7 @@ export default function AdminReferencesPage() {
 
   const beginEdit = (
     catalogType: CatalogType,
-    value: AdminCategory | AdminLocation | { id: string; name: string; icon: string | null },
+    value: NonNullable<AdminCategory["subcategories"]>[number] | AdminLocation | { id: string; name: string; icon: string | null },
   ) => {
     setType(catalogType);
     setForm({
@@ -152,7 +158,7 @@ export default function AdminReferencesPage() {
       id: value.id,
       name: value.name,
       icon: "icon" in value && value.icon ? value.icon : "",
-      category_id: "category_id" in value && typeof value.category_id === "string" ? value.category_id : "",
+      category_id: "category_id" in value ? value.category_id : "",
       type: "type" in value ? value.type : "CITY",
       country_code: "country_code" in value ? value.country_code : "BJ",
       parent_id: "parent_id" in value && value.parent_id ? value.parent_id : "",
@@ -172,10 +178,7 @@ export default function AdminReferencesPage() {
     setError(null);
     const api = useAdminEstablishmentsStore.getState();
     try {
-      if (type === "category") {
-        if (form.id) await api.updateCategory(form.id, { name: form.name, icon: form.icon });
-        else await api.createCategory(form.name, form.icon);
-      } else if (type === "subcategory") {
+      if (type === "subcategory") {
         if (form.id) await api.updateSubcategory(form.id, { name: form.name, icon: form.icon, category_id: form.category_id });
         else await api.createSubcategory(form.category_id, form.name, form.icon);
       } else if (type === "amenity") {
@@ -210,10 +213,9 @@ export default function AdminReferencesPage() {
     setError(null);
     try {
       const api = useAdminEstablishmentsStore.getState();
-      if (pendingDelete.type === "category") await api.deleteCategory(pendingDelete.id);
       if (pendingDelete.type === "subcategory") await api.deleteSubcategory(pendingDelete.id);
-      if (pendingDelete.type === "location") await api.deleteLocation(pendingDelete.id);
       if (pendingDelete.type === "amenity") await api.deleteAmenity(pendingDelete.id);
+      if (pendingDelete.type === "location") await api.deleteLocation(pendingDelete.id);
       setPendingDelete(null);
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : "La suppression a échoué.");
@@ -236,10 +238,10 @@ export default function AdminReferencesPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Référentiels" }]}
+        breadcrumbs={[{ label: "Dashboard", href: "/owners" }, { label: "Référentiels" }]}
         title="Référentiels"
-        description="Centralisez les catégories, les zones géographiques et les équipements utilisés par les établissements."
-        actions={[{ label: "Ajouter une donnée", icon: Plus, onClick: () => beginCreate(tab === "locations" ? "location" : tab === "amenities" ? "amenity" : "category") }]}
+        description="Consultez les catégories et gérez vos lieux, sous-catégories et équipements."
+        actions={[{ label: "Ajouter une donnée", icon: Plus, onClick: () => beginCreate(tab === "locations" ? "location" : tab === "amenities" ? "amenity" : "subcategory") }]}
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -297,10 +299,10 @@ export default function AdminReferencesPage() {
                 <SectionHeading
                   icon={Layers3}
                   title="Catégories et sous-catégories"
-                  description="Organisez le classement des établissements."
+                  description="Les catégories sont définies par l’administration ; vous pouvez gérer leurs sous-catégories."
                   count={categories.length}
-                  onCreate={() => beginCreate("category")}
-                  createLabel="Nouvelle catégorie"
+                  onCreate={() => beginCreate("subcategory")}
+                  createLabel="Nouvelle sous-catégorie"
                 />
                 {visibleCategories.length ? (
                   <div className="grid gap-3 xl:grid-cols-2">
@@ -308,8 +310,6 @@ export default function AdminReferencesPage() {
                       <CategoryCard
                         key={category.id}
                         category={category}
-                        onEdit={() => beginEdit("category", category)}
-                        onDelete={() => setPendingDelete({ type: "category", id: category.id, name: category.name })}
                         onAddSubcategory={() => beginCreate("subcategory", category.id)}
                         onEditSubcategory={(subcategory) => beginEdit("subcategory", subcategory)}
                         onDeleteSubcategory={(subcategory) => setPendingDelete({ type: "subcategory", id: subcategory.id, name: subcategory.name })}
@@ -325,7 +325,7 @@ export default function AdminReferencesPage() {
                 <SectionHeading
                   icon={MapPin}
                   title="Lieux géographiques"
-                  description="Gérez les pays, régions, villes et quartiers."
+                  description="Définissez les pays, régions, villes et quartiers disponibles pour vos établissements."
                   count={locations.length}
                   onCreate={() => beginCreate("location")}
                   createLabel="Ajouter un lieu"
@@ -403,51 +403,87 @@ export default function AdminReferencesPage() {
           </DialogHeader>
           <form id="catalog-form" onSubmit={(event) => void save(event)} className="space-y-4">
             <FormField label="Nom" required>
-              <Input autoFocus required minLength={2} maxLength={150} value={form.name} onChange={(event) => setForm((value) => ({ ...value, name: event.target.value }))} placeholder={`Nom ${TYPE_LABELS[type]}`} />
+              <Input autoFocus required minLength={2} maxLength={100} value={form.name} onChange={(event) => setForm((value) => ({ ...value, name: event.target.value }))} placeholder={`Nom ${TYPE_LABELS[type]}`} />
             </FormField>
-            {(type === "category" || type === "subcategory" || type === "amenity") && (
+            {(type === "subcategory" || type === "amenity") && (
               <FormField label="Icône" hint="Optionnel">
                 <Input maxLength={100} value={form.icon} onChange={(event) => setForm((value) => ({ ...value, icon: event.target.value }))} placeholder="Ex. wifi, restaurant..." />
               </FormField>
             )}
             {type === "subcategory" && (
-              <FormField label="Catégorie" required>
-                <select required className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-500" value={form.category_id} onChange={(event) => setForm((value) => ({ ...value, category_id: event.target.value }))}>
-                  <option value="">Choisir une catégorie</option>
-                  {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-                </select>
-              </FormField>
+              <div className="space-y-1.5">
+                <label id="subcategory-category-label" className="block text-sm font-medium text-slate-700">
+                  Catégorie <span className="text-rose-500">*</span>
+                </label>
+                <Select
+                  required
+                  value={form.category_id}
+                  onValueChange={(categoryId) => setForm((value) => ({ ...value, category_id: categoryId }))}
+                >
+                  <SelectTrigger
+                    aria-labelledby="subcategory-category-label"
+                    className="h-10 w-full rounded-xl border-slate-200 bg-white"
+                  >
+                    <SelectValue placeholder="Choisir une catégorie" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             )}
             {type === "location" && (
               <div className="grid gap-4 sm:grid-cols-2">
-                <FormField label="Type" required>
-                  <select className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm" value={form.type} onChange={(event) => setForm((value) => ({ ...value, type: event.target.value }))}>
-                    {["COUNTRY", "REGION", "CITY", "DISTRICT", "NEIGHBORHOOD"].map((item) => <option key={item}>{item}</option>)}
-                  </select>
-                </FormField>
+                <div className="space-y-1.5">
+                  <label id="location-type-label" className="block text-sm font-medium text-slate-700">
+                    Type <span className="text-rose-500">*</span>
+                  </label>
+                  <Select value={form.type} onValueChange={(value) => setForm((current) => ({ ...current, type: value }))}>
+                    <SelectTrigger aria-labelledby="location-type-label" className="h-10 w-full rounded-xl border-slate-200 bg-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["COUNTRY", "REGION", "CITY", "DISTRICT", "NEIGHBORHOOD"].map((item) => (
+                        <SelectItem key={item} value={item}>{item}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <FormField label="Code pays" hint="2 lettres" required>
-                  <Input required minLength={2} maxLength={2} value={form.country_code} onChange={(event) => setForm((value) => ({ ...value, country_code: event.target.value.toUpperCase() }))} />
+                  <Input required minLength={2} maxLength={2} value={form.country_code} onChange={(event) => setForm((current) => ({ ...current, country_code: event.target.value }))} placeholder="BJ" />
                 </FormField>
-                <FormField label="Lieu parent" hint="Optionnel">
-                  <select className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm" value={form.parent_id} onChange={(event) => setForm((value) => ({ ...value, parent_id: event.target.value }))}>
-                    <option value="">Aucun</option>
-                    {locations.filter((location) => location.id !== form.id).map((location) => <option key={location.id} value={location.id}>{location.name} ({location.type})</option>)}
-                  </select>
-                </FormField>
+                <div className="space-y-1.5">
+                  <label id="location-parent-label" className="block text-sm font-medium text-slate-700">
+                    Lieu parent <span className="text-xs font-normal text-slate-400">Optionnel</span>
+                  </label>
+                  <Select value={form.parent_id || "none"} onValueChange={(value) => setForm((current) => ({ ...current, parent_id: value === "none" ? "" : value }))}>
+                    <SelectTrigger aria-labelledby="location-parent-label" className="h-10 w-full rounded-xl border-slate-200 bg-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Aucun</SelectItem>
+                      {locations.filter((location) => location.id !== form.id).map((location) => (
+                        <SelectItem key={location.id} value={location.id}>{location.name} ({location.type})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <FormField label="Fuseau horaire" hint="Optionnel">
-                  <Input maxLength={50} value={form.timezone} onChange={(event) => setForm((value) => ({ ...value, timezone: event.target.value }))} placeholder="Africa/Porto-Novo" />
+                  <Input maxLength={50} value={form.timezone} onChange={(event) => setForm((current) => ({ ...current, timezone: event.target.value }))} placeholder="Africa/Porto-Novo" />
                 </FormField>
                 <FormField label="Latitude" hint="Optionnel">
-                  <Input type="number" step="any" min={-90} max={90} value={form.latitude} onChange={(event) => setForm((value) => ({ ...value, latitude: event.target.value }))} />
+                  <Input type="number" step="any" min={-90} max={90} value={form.latitude} onChange={(event) => setForm((current) => ({ ...current, latitude: event.target.value }))} />
                 </FormField>
                 <FormField label="Longitude" hint="Optionnel">
-                  <Input type="number" step="any" min={-180} max={180} value={form.longitude} onChange={(event) => setForm((value) => ({ ...value, longitude: event.target.value }))} />
+                  <Input type="number" step="any" min={-180} max={180} value={form.longitude} onChange={(event) => setForm((current) => ({ ...current, longitude: event.target.value }))} />
                 </FormField>
                 <FormField label="Population" hint="Optionnel">
-                  <Input type="number" min={0} value={form.population} onChange={(event) => setForm((value) => ({ ...value, population: event.target.value }))} />
+                  <Input type="number" min={0} value={form.population} onChange={(event) => setForm((current) => ({ ...current, population: event.target.value }))} />
                 </FormField>
                 <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium text-slate-700">
-                  <input type="checkbox" checked={form.is_active} onChange={(event) => setForm((value) => ({ ...value, is_active: event.target.checked }))} className="h-4 w-4 rounded border-slate-300 text-emerald-700 focus:ring-emerald-600" />
+                  <input type="checkbox" checked={form.is_active} onChange={(event) => setForm((current) => ({ ...current, is_active: event.target.checked }))} className="h-4 w-4 rounded border-slate-300 text-emerald-700 focus:ring-emerald-600" />
                   Lieu actif
                 </label>
               </div>
@@ -468,7 +504,7 @@ export default function AdminReferencesPage() {
         onOpenChange={(open) => {
           if (!open && !deleting) setPendingDelete(null);
         }}
-        title={`Supprimer ${TYPE_LABELS[pendingDelete?.type ?? "category"]} ?`}
+        title={`Supprimer ${TYPE_LABELS[pendingDelete?.type ?? "subcategory"]} ?`}
         description="Cette suppression peut empêcher son utilisation dans les établissements. Cette action est définitive."
         confirmLabel={deleting ? "Suppression..." : "Supprimer définitivement"}
         confirmVariant="danger"
@@ -537,15 +573,11 @@ function SectionHeading({
 
 function CategoryCard({
   category,
-  onEdit,
-  onDelete,
   onAddSubcategory,
   onEditSubcategory,
   onDeleteSubcategory,
 }: {
   category: AdminCategory;
-  onEdit: () => void;
-  onDelete: () => void;
   onAddSubcategory: () => void;
   onEditSubcategory: (subcategory: NonNullable<AdminCategory["subcategories"]>[number]) => void;
   onDeleteSubcategory: (subcategory: NonNullable<AdminCategory["subcategories"]>[number]) => void;
@@ -563,8 +595,6 @@ function CategoryCard({
           <p className="text-xs text-slate-500">{category.icon || "Catégorie"} · {subcategories.length} sous-catégorie{subcategories.length === 1 ? "" : "s"}</p>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" aria-label={`Modifier ${category.name}`} onClick={onEdit} className="h-8 w-8 rounded-lg"><Pencil className="h-4 w-4 text-slate-500" /></Button>
-          <Button variant="ghost" size="icon" aria-label={`Supprimer ${category.name}`} onClick={onDelete} className="h-8 w-8 rounded-lg hover:bg-rose-50"><Trash2 className="h-4 w-4 text-rose-600" /></Button>
           <Button variant="ghost" size="icon" aria-label={expanded ? "Réduire" : "Développer"} onClick={() => setExpanded((value) => !value)} className="h-8 w-8 rounded-lg">
             <ChevronDown className={`h-4 w-4 text-slate-500 transition-transform ${expanded ? "" : "-rotate-90"}`} />
           </Button>

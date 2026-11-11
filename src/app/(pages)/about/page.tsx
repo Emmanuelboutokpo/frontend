@@ -116,8 +116,8 @@ const ABOUT_CTA = {
   title: "Prêt à vivre l'expérience BestReservs ?",
   description:
     "Rejoignez des milliers de voyageurs et découvrez les meilleures adresses d'Afrique.",
-  primaryCta: { label: "Explorer", href: "/pages/explorer" },
-  secondaryCta: { label: "Nous contacter", href: "/pages/contact" },
+  primaryCta: { label: "Explorer", href: "/explorer" },
+  secondaryCta: { label: "Nous contacter", href: "/contact" },
 };
   return (
     <main className="min-h-screen bg-background">

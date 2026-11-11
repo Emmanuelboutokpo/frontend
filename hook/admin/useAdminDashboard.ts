@@ -26,9 +26,8 @@ export function useAdminDashboard() {
 
   return {
     users: metric([data.overview, data.users], ["total_users", "users_count", "user_count", "users", "total"]),
-    establishments: metric([data.overview, data.establishments], ["total_establishments", "establishments_count", "establishment_count", "establishments", "total"]),
+    establishments: metric([data.establishments], ["total_establishments", "establishments_count", "establishment_count", "total", "count"]),
     pending: metric([data.overview, data.establishments], ["pending_establishments", "establishments_pending", "pending", "pending_count"]),
-    bookings: metric([data.overview, data.reservations], ["total_reservations", "reservations_count", "reservation_count", "reservations", "total"]),
     revenue: metric([data.overview, data.revenue], ["gross_revenue", "total_revenue", "revenue", "total_paid", "paid_amount", "gross_paid"]),
     data,
     errors,

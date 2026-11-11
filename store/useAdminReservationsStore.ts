@@ -9,7 +9,8 @@ import type {
 const API_URL = (
   process.env.NEXT_PUBLIC_API_URL ?? "https://bestreservs-api.onrender.com"
 ).replace(/\/+$/, "");
-const RESERVATIONS_PATH = "/admin/reservations";
+const ADMIN_RESERVATIONS_PATH = "/api/v1/admin/reservations";
+const OWNER_RESERVATIONS_PATH = "/api/v1/owners/reservations";
 let listRequestId = 0;
 let recentRequestId = 0;
 let statsRequestId = 0;
@@ -19,6 +20,12 @@ let reservationsSearchCache: {
   reservations: AdminReservation[];
   loadedAt: number;
 } | null = null;
+
+function reservationsPath(): string {
+  return useAuthStore.getState().role === "PROPRIETAIRE"
+    ? OWNER_RESERVATIONS_PATH
+    : ADMIN_RESERVATIONS_PATH;
+}
 
 type ApiRecord = Record<string, unknown>;
 
@@ -120,7 +127,7 @@ async function request(path: string, options: RequestInit = {}): Promise<unknown
   const token = useAuthStore.getState().accessToken;
   if (!token) throw new Error("Une session administrateur est requise.");
 
-  const response = await fetch(`${API_URL}${RESERVATIONS_PATH}${path}`, {
+  const response = await fetch(`${API_URL}${reservationsPath()}${path}`, {
     ...options,
     headers: {
       Accept: "application/json",

@@ -13,7 +13,7 @@ export function TopDestinations({ rows, error }: { rows: AnalyticsRecord[]; erro
   const max = Math.max(...destinations.map((destination) => destination.value), 0);
 
   return (
-    <DashboardSection title="Top destinations">
+    <DashboardSection title="Destinations les plus réservées">
       {error ? <p role="alert" className="rounded-lg bg-rose-50 p-3 text-xs text-rose-700">{error}</p> : destinations.length === 0 ? <p className="py-5 text-center text-xs text-slate-400">Aucune destination disponible.</p> : <div className="space-y-3">
         {destinations.map((d, i) => (
           <div key={d.name} className="flex items-center gap-3">

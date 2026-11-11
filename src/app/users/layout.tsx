@@ -12,8 +12,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const role = useAuthStore((state) => state.role);
-  const canLoadUserAccount =
-    isAuthenticated && (role === "CLIENT" || role === "PROPRIETAIRE");
+  const canLoadUserAccount = isAuthenticated && role === "CLIENT";
   const profile = useUserAccountStore((state) => state.profile);
   const loadProfile = useUserAccountStore((state) => state.loadProfile);
   const loadUnreadCount = useUserAccountStore((state) => state.loadUnreadCount);

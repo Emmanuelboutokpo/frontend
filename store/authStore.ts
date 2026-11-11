@@ -62,6 +62,7 @@ type AuthState = {
     refreshToken: string | null
     updateProfile: (form: { firstName: string, lastName: string, email?: string }) => void
     signUp: (email: string, password: string) => Promise<void>
+    signUpOwner: (email: string, password: string) => Promise<void>
     verifyOtp: (email: string, code: string) => Promise<void>
     resendOtp: (email: string) => Promise<void>
     signIn: (email: string, password: string) => Promise<void>
@@ -144,6 +145,12 @@ export const useAuthStore = create<AuthState>()(
             })),
             signUp: async (email, password) => {
                 await request('/signup', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password }),
+                })
+            },
+            signUpOwner: async (email, password) => {
+                await request('/signup/proprietaire', {
                     method: 'POST',
                     body: JSON.stringify({ email, password }),
                 })

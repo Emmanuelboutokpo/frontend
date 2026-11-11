@@ -203,9 +203,6 @@ export default function Home() {
             <span className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 ring-1 ring-amber-100">
               <LoaderCircle className="h-7 w-7 animate-spin text-amber-600" aria-hidden="true" />
             </span>
-            <p role="status" className="mt-4 text-sm text-slate-500">
-             Chargement des établissements populaires...
-            </p>
           </div>
         
       )}

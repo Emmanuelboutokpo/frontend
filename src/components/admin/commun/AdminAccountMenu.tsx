@@ -25,6 +25,7 @@ export function AdminAccountMenu({ compact = false }: { compact?: boolean }) {
   const signOut = useAuthStore((state) => state.signOut);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const name = [firstName, lastName].filter(Boolean).join(" ") || email?.split("@")[0] || "Administrateur";
+  const profileHref = role === "PROPRIETAIRE" ? "/owners/profil" : "/admin/profil";
 
   const initials = [firstName?.[0], lastName?.[0]].filter(Boolean).join("").toUpperCase()
     || email?.slice(0, 2).toUpperCase()
@@ -77,7 +78,7 @@ export function AdminAccountMenu({ compact = false }: { compact?: boolean }) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/admin/profil" className="cursor-pointer">
+          <Link href={profileHref} className="cursor-pointer">
             <UserRound className="h-4 w-4" />
             Mon profil
           </Link>

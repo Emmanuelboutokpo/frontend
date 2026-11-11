@@ -4,7 +4,15 @@ import { DashboardSection } from "./DashboardSection";
 import { Progress } from "@/components/ui/progress";
 import { analyticsNumber, analyticsString, type AnalyticsRecord } from "@/store/useAdminAnalyticsStore";
 
-export function TopEstablishments({ rows, error }: { rows: AnalyticsRecord[]; error?: string }) {
+export function TopEstablishments({
+  rows,
+  error,
+  href = "/admin/etablissements",
+}: {
+  rows: AnalyticsRecord[];
+  error?: string;
+  href?: string;
+}) {
   const establishments = rows.flatMap((row) => {
     const name = analyticsString(row, ["name", "establishment_name", "title"]);
     const value = analyticsNumber(row, ["reservations", "reservation_count", "bookings", "count", "value", "total"]);
@@ -13,7 +21,7 @@ export function TopEstablishments({ rows, error }: { rows: AnalyticsRecord[]; er
   const max = Math.max(...establishments.map((entry) => entry.value), 0);
 
   return (
-    <DashboardSection title="Établissements les plus réservés" action={{ label: "Voir tout", href: "/admin/etablissements" }}>
+    <DashboardSection title="Établissements les plus réservés" action={{ label: "Voir tout", href }}>
       {error ? (
         <p role="alert" className="rounded-lg bg-rose-50 p-3 text-xs text-rose-700">{error}</p>
       ) : establishments.length === 0 ? (

@@ -15,12 +15,19 @@ import type {
 const API_URL = (
   process.env.NEXT_PUBLIC_API_URL ?? "https://bestreservs-api.onrender.com"
 ).replace(/\/+$/, "");
-const USERS_PATH = "/api/v1/admin/users";
+const ADMIN_USERS_PATH = "/api/v1/admin/users";
+const OWNER_USERS_PATH = "/api/v1/owners/users";
 let listRequestId = 0;
 let statsRequestId = 0;
 let detailsRequestId = 0;
 
 type ApiRecord = Record<string, unknown>;
+
+function usersPath(): string {
+  return useAuthStore.getState().role === "PROPRIETAIRE"
+    ? OWNER_USERS_PATH
+    : ADMIN_USERS_PATH;
+}
 
 type UserPage = {
   items: unknown[];
@@ -202,7 +209,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = useAuthStore.getState().accessToken;
   if (!token) throw new Error("Une session administrateur est requise.");
 
-  const response = await fetch(`${API_URL}${USERS_PATH}${path}`, {
+  const response = await fetch(`${API_URL}${usersPath()}${path}`, {
     ...options,
     headers: {
       Accept: "application/json",
@@ -261,7 +268,9 @@ export const useUsersStore = create<UsersState>((set, get) => ({
         offset: String((page - 1) * perPage),
       });
       if (filters.search.trim()) params.set("search", filters.search.trim());
-      if (filters.role !== "ALL") params.set("role", filters.role);
+      if (filters.role !== "ALL" && useAuthStore.getState().role !== "PROPRIETAIRE") {
+        params.set("role", filters.role);
+      }
       if (filters.status !== "ALL") params.set("status", filters.status);
       const result = normalizePage(await request<unknown>(`?${params.toString()}`));
       if (requestId === listRequestId) {

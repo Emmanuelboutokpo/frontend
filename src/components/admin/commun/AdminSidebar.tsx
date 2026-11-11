@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
  import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { adminNav } from "../../../../config/adminNav";
+import { adminNav, ownersNav } from "../../../../config/adminNav";
 import { AdminAccountMenu } from "./AdminAccountMenu";
- 
+import { useAuthStore } from "@/store/authStore";
 
 interface AdminSidebarProps {
   open: boolean;
@@ -14,6 +14,8 @@ interface AdminSidebarProps {
 
 function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
   const pathname = usePathname();
+  const role = useAuthStore((state) => state.role);
+  const navigation = role === "PROPRIETAIRE" ? ownersNav : adminNav;
 
   return (
     <div className="flex h-full flex-col">
@@ -34,7 +36,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4 lr-scrollbar">
-        {adminNav.map((group) => (
+        {navigation.map((group) => (
           <div key={group.section}>
             <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
               {group.section}
@@ -42,7 +44,9 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
             <div className="space-y-0.5">
               {group.items.map((item) => {
                 const Icon = item.icon;
-                const isActive = pathname === item.href;
+                const isActive = "exact" in item && item.exact
+                  ? pathname === item.href
+                  : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
                 return (
                   <Link

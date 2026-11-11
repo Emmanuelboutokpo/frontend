@@ -15,10 +15,23 @@ import type {
 const API_URL = (
   process.env.NEXT_PUBLIC_API_URL ?? "https://bestreservs-api.onrender.com"
 ).replace(/\/+$/, "");
-const ESTABLISHMENTS_PATH = "/admin/establishments";
+const ADMIN_ESTABLISHMENTS_PATH = "/api/v1/admin/establishments";
+const OWNER_ESTABLISHMENTS_PATH = "/api/v1/owners/establishments";
 const PAGE_LIMIT = 100;
 type ApiRecord = Record<string, unknown>;
 let establishmentListRequestId = 0;
+
+function establishmentsPath(): string {
+  return useAuthStore.getState().role === "PROPRIETAIRE"
+    ? OWNER_ESTABLISHMENTS_PATH
+    : ADMIN_ESTABLISHMENTS_PATH;
+}
+
+function establishmentMediaPath(photoId: string, action = ""): string {
+  return useAuthStore.getState().role === "PROPRIETAIRE"
+    ? `/api/v1/owners/establishments/media/photos/${photoId}${action}`
+    : `/admin/photos/${photoId}${action}`;
+}
 
 interface State {
   establishments: AdminEstablishment[];
@@ -310,7 +323,7 @@ export const useAdminEstablishmentsStore = create<State>((set, get) => ({
       if (search.trim().length >= 2) params.set("q", search.trim());
       if (statusFilter !== "ALL") params.set("status", statusFilter);
       if (categoryFilter !== "ALL") params.set("category_id", categoryFilter);
-      const response = await request(`${ESTABLISHMENTS_PATH}?${params}`);
+      const response = await request(`${establishmentsPath()}?${params}`);
       if (!isRecord(response) || !Array.isArray(response.items)) throw new Error("L’API a renvoyé une page d’établissements invalide.");
       if (requestId === establishmentListRequestId) {
         set({
@@ -335,8 +348,8 @@ export const useAdminEstablishmentsStore = create<State>((set, get) => ({
         { key: "suspendus", status: "SUSPENDU" },
       ];
       const responses = await Promise.all([
-        request(`${ESTABLISHMENTS_PATH}?limit=1`),
-        ...statuses.map(({ status }) => request(`${ESTABLISHMENTS_PATH}?limit=1&status=${status}`)),
+        request(`${establishmentsPath()}?limit=1`),
+        ...statuses.map(({ status }) => request(`${establishmentsPath()}?limit=1&status=${status}`)),
       ]);
       const counts = responses.map((response) => {
         if (!isRecord(response) || typeof response.total !== "number") {
@@ -368,27 +381,27 @@ export const useAdminEstablishmentsStore = create<State>((set, get) => ({
     }
   },
 
-  loadDetails: async (id) => normalizeEstablishment(await request(`${ESTABLISHMENTS_PATH}/${id}`)),
+  loadDetails: async (id) => normalizeEstablishment(await request(`${establishmentsPath()}/${id}`)),
   createEstablishment: async (payload) => {
-    const result = normalizeEstablishment(await request(ESTABLISHMENTS_PATH, { method: "POST", body: JSON.stringify(payload) }));
+    const result = normalizeEstablishment(await request(establishmentsPath(), { method: "POST", body: JSON.stringify(payload) }));
     await get().loadEstablishments();
     return result;
   },
   updateEstablishment: async (id, payload) => {
-    const result = normalizeEstablishment(await request(`${ESTABLISHMENTS_PATH}/${id}`, { method: "PATCH", body: JSON.stringify(payload) }));
+    const result = normalizeEstablishment(await request(`${establishmentsPath()}/${id}`, { method: "PATCH", body: JSON.stringify(payload) }));
     await get().loadEstablishments();
     return result;
   },
   removeEstablishment: async (id) => {
-    await request(`${ESTABLISHMENTS_PATH}/${id}`, { method: "DELETE" });
+    await request(`${establishmentsPath()}/${id}`, { method: "DELETE" });
     await get().loadEstablishments();
   },
   changeStatus: async (id, status) => {
-    await request(`${ESTABLISHMENTS_PATH}/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
+    await request(`${establishmentsPath()}/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
     await get().loadEstablishments();
   },
   changeAvailability: async (id, availability_status) => {
-    await request(`${ESTABLISHMENTS_PATH}/${id}/availability`, { method: "PATCH", body: JSON.stringify({ availability_status }) });
+    await request(`${establishmentsPath()}/${id}/availability`, { method: "PATCH", body: JSON.stringify({ availability_status }) });
     await get().loadEstablishments();
   },
   addPhotos: async (id, files, coverIndex) => {
@@ -397,7 +410,10 @@ export const useAdminEstablishmentsStore = create<State>((set, get) => ({
     const existingPhotoIds = new Set(before.photos.map((photo) => photo.id));
     const body = new FormData();
     files.forEach((file) => body.append("files", file));
-    await request(`${ESTABLISHMENTS_PATH}/${id}/photos`, { method: "POST", body });
+    const photosPath = useAuthStore.getState().role === "PROPRIETAIRE"
+      ? `/api/v1/owners/establishments/media/establishments/${id}/photos`
+      : `${establishmentsPath()}/${id}/photos`;
+    await request(photosPath, { method: "POST", body });
     const updated = await get().loadDetails(id);
     const addedPhotos = updated.photos.filter((photo) => !existingPhotoIds.has(photo.id));
     if (coverIndex !== undefined) {
@@ -405,25 +421,25 @@ export const useAdminEstablishmentsStore = create<State>((set, get) => ({
       if (!cover) {
         throw new Error("Les photos ont été envoyées, mais la photo choisie pour la couverture est introuvable.");
       }
-      await request(`/admin/photos/${cover.id}/cover`, { method: "PATCH" });
+      await request(establishmentMediaPath(cover.id, "/cover"), { method: "PATCH" });
     }
     await get().loadEstablishments();
   },
   deletePhoto: async (photoId) => {
-    await request(`/admin/photos/${photoId}`, { method: "DELETE" });
+    await request(establishmentMediaPath(photoId), { method: "DELETE" });
     await get().loadEstablishments();
   },
   setCoverPhoto: async (photoId) => {
-    await request(`/admin/photos/${photoId}/cover`, { method: "PATCH" });
+    await request(establishmentMediaPath(photoId, "/cover"), { method: "PATCH" });
     await get().loadEstablishments();
   },
   addAmenities: async (id, amenityIds) => {
     if (!amenityIds.length) return;
-    await request(`${ESTABLISHMENTS_PATH}/${id}/amenities`, { method: "POST", body: JSON.stringify({ amenity_ids: amenityIds }) });
+    await request(`${establishmentsPath()}/${id}/amenities`, { method: "POST", body: JSON.stringify({ amenity_ids: amenityIds }) });
     await get().loadEstablishments();
   },
   removeAmenity: async (id, amenityId) => {
-    await request(`${ESTABLISHMENTS_PATH}/${id}/amenities/${amenityId}`, { method: "DELETE" });
+    await request(`${establishmentsPath()}/${id}/amenities/${amenityId}`, { method: "DELETE" });
     await get().loadEstablishments();
   },
   createCategory: async (name, icon) => {
@@ -439,39 +455,66 @@ export const useAdminEstablishmentsStore = create<State>((set, get) => ({
     await get().loadReferences();
   },
   createSubcategory: async (categoryId, name, icon) => {
-    await request(`/api/v1/admin/categories/${categoryId}/subcategories`, { method: "POST", body: JSON.stringify({ name, icon: icon || null }) });
+    const path = useAuthStore.getState().role === "PROPRIETAIRE"
+      ? `/api/v1/owners/categories/${categoryId}/subcategories`
+      : `/api/v1/admin/categories/${categoryId}/subcategories`;
+    await request(path, { method: "POST", body: JSON.stringify({ name, icon: icon || null }) });
     await get().loadReferences();
   },
   updateSubcategory: async (id, patch) => {
-    await request(`/api/v1/admin/subcategories/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
+    const path = useAuthStore.getState().role === "PROPRIETAIRE"
+      ? `/api/v1/owners/categories/${id}`
+      : `/api/v1/admin/subcategories/${id}`;
+    await request(path, { method: "PATCH", body: JSON.stringify(patch) });
     await get().loadReferences();
   },
   deleteSubcategory: async (id) => {
-    await request(`/api/v1/admin/subcategories/${id}`, { method: "DELETE" });
+    const path = useAuthStore.getState().role === "PROPRIETAIRE"
+      ? `/api/v1/owners/categories/${id}`
+      : `/api/v1/admin/subcategories/${id}`;
+    await request(path, { method: "DELETE" });
     await get().loadReferences();
   },
   createLocation: async (payload) => {
-    await request("/api/v1/locations", { method: "POST", body: JSON.stringify(payload) });
+    const path = useAuthStore.getState().role === "PROPRIETAIRE"
+      ? "/api/v1/owners/locations"
+      : "/api/v1/locations";
+    await request(path, { method: "POST", body: JSON.stringify(payload) });
     await get().loadReferences();
   },
   updateLocation: async (id, patch) => {
-    await request(`/api/v1/locations/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
+    const path = useAuthStore.getState().role === "PROPRIETAIRE"
+      ? `/api/v1/owners/locations/${id}`
+      : `/api/v1/locations/${id}`;
+    await request(path, { method: "PATCH", body: JSON.stringify(patch) });
     await get().loadReferences();
   },
   deleteLocation: async (id) => {
-    await request(`/api/v1/locations/${id}`, { method: "DELETE" });
+    const path = useAuthStore.getState().role === "PROPRIETAIRE"
+      ? `/api/v1/owners/locations/${id}`
+      : `/api/v1/locations/${id}`;
+    await request(path, { method: "DELETE" });
     await get().loadReferences();
   },
   createAmenity: async (name, icon) => {
-    await request("/admin/amenities", { method: "POST", body: JSON.stringify({ name, icon: icon || null }) });
+    const path = useAuthStore.getState().role === "PROPRIETAIRE"
+      ? "/api/v1/owners/amenities"
+      : "/admin/amenities";
+    await request(path, { method: "POST", body: JSON.stringify({ name, icon: icon || null }) });
     await get().loadReferences();
   },
   updateAmenity: async (id, patch) => {
-    await request(`/admin/amenities/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
+    const path = useAuthStore.getState().role === "PROPRIETAIRE"
+      ? `/api/v1/owners/amenities/${id}`
+      : `/admin/amenities/${id}`;
+    await request(path, { method: "PATCH", body: JSON.stringify(patch) });
     await get().loadReferences();
   },
   deleteAmenity: async (id) => {
-    await request(`/admin/amenities/${id}`, { method: "DELETE" });
+    const path = useAuthStore.getState().role === "PROPRIETAIRE"
+      ? `/api/v1/owners/amenities/${id}`
+      : `/admin/amenities/${id}`;
+    await request(path, { method: "DELETE" });
     await get().loadReferences();
   },
   setSearch: (search) => set({ search, page: 1 }),

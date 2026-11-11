@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import AuthDialog from '@/components/front-office/AuthDialog'
-import { LogOut, Menu, UserRound } from 'lucide-react'
+import { Building2, LogOut, Menu, UserRound } from 'lucide-react'
 import { useAuthStore } from '@/store'
 
 const navItems = [
@@ -18,6 +18,19 @@ const navItems = [
   { name: 'Contact', href: '/contact' },
 ]
 
+function LanguageSelect() {
+  return (
+    <Select defaultValue="fr">
+      <SelectTrigger aria-label="Choisir la langue" className="h-9 w-[104px] rounded-full border-slate-200 bg-white px-3 text-xs font-semibold shadow-none">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent align="end">
+        <SelectItem value="fr">Français</SelectItem>
+        <SelectItem value="en">English</SelectItem>
+      </SelectContent>
+    </Select>
+  )
+}
 
 function AccountButton() {
   const router = useRouter()
@@ -29,7 +42,7 @@ function AccountButton() {
   const signOut = useAuthStore((state) => state.signOut)
   const [authOpen, setAuthOpen] = useState(false)
   const initials = `${firstName?.[0] ?? ''}${lastName?.[0] ?? ''}`.toUpperCase() || 'U'
-  const homePath = role === 'ADMIN' ? '/admin' : '/users'
+  const homePath = role === 'ADMIN' ? '/admin' : role === 'PROPRIETAIRE' ? '/owners' : '/users'
   const handleSignOut = async () => {
     try {
       await signOut()
@@ -39,8 +52,38 @@ function AccountButton() {
     }
   }
 
-  if (!isAuthenticated) return <>
-    <Button type="button" onClick={() => setAuthOpen(true)} className="h-9 rounded-full bg-black px-5 text-xs font-bold text-white shadow-sm hover:bg-[#0a3d71]">Se connecter</Button><AuthDialog open={authOpen} onOpenChange={setAuthOpen} onAuthenticated={() => router.push(useAuthStore.getState().role === 'ADMIN' ? '/admin' : '/users')} title="Connectez-vous à votre compte" /></>
+  if (!isAuthenticated) return (
+    <>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          asChild
+          variant="outline"
+          className="h-9 rounded-full border-emerald-700 px-3 text-xs font-bold text-emerald-800 hover:bg-emerald-50 sm:px-4"
+        >
+          <Link href="/devenir-proprietaire">
+            <Building2 className="mr-1.5 h-4 w-4" />
+            Devenir partenaire
+          </Link>
+        </Button>
+        <Button
+          type="button"
+          onClick={() => setAuthOpen(true)}
+          className="h-9 rounded-full bg-black px-4 text-xs font-bold text-white shadow-sm hover:bg-[#0a3d71] sm:px-5"
+        >
+          Se connecter
+        </Button>
+      </div>
+      <AuthDialog
+        open={authOpen}
+        onOpenChange={setAuthOpen}
+        onAuthenticated={() => {
+          const currentRole = useAuthStore.getState().role
+          router.push(currentRole === 'ADMIN' ? '/admin' : currentRole === 'PROPRIETAIRE' ? '/owners' : '/users')
+        }}
+        title="Connectez-vous à votre compte"
+      />
+    </>
+  )
 
   return <DropdownMenu>
     <DropdownMenuTrigger asChild>
@@ -57,7 +100,8 @@ function AccountButton() {
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
       <DropdownMenuItem onSelect={() => router.push(homePath)}>
-        <UserRound className="h-4 w-4" />{role === 'ADMIN' ? 'Espace administration' : 'Mon espace utilisateur'}</DropdownMenuItem>
+      <UserRound className="h-4 w-4" />{role === 'ADMIN' ? 'Espace administration' : role === 'PROPRIETAIRE' ? 'Espace propriétaire' : 'Mon espace utilisateur'}
+      </DropdownMenuItem>
       <DropdownMenuSeparator />
       <DropdownMenuItem variant="destructive" onSelect={() => { void handleSignOut() }}>
         <LogOut className="h-4 w-4" />Déconnexion
@@ -83,15 +127,7 @@ export default function Navbar() {
           </Link>)}
       </nav>
       <div className="hidden items-center gap-3 lg:flex">
-       
-        <Select defaultValue="français">
-          <SelectTrigger className="h-8 border-0 bg-transparent px-0 font-semibold shadow-none focus-visible:ring-0"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="français">Français</SelectItem>
-            <SelectItem value="anglais">Anglais</SelectItem>
-          </SelectContent>
-        </Select>
-     
+        <LanguageSelect />
         <AccountButton />
       </div>
       <div className="flex items-center gap-2 lg:hidden">
@@ -115,7 +151,8 @@ export default function Navbar() {
                   {item.name}
                 </Link>)}
             </nav>
-            <div className="border-t border-slate-100 p-4">
+            <div className="flex items-center gap-2 border-t border-slate-100 p-4">
+              <LanguageSelect />
               <AccountButton />
             </div>
           </SheetContent>

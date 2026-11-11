@@ -4,14 +4,11 @@ import {
   Users,
   Building2,
   Clock,
-  CalendarDays,
   Wallet,
   AlertTriangle,
 } from "lucide-react";
 
-import { ReservationsChart } from "@/components/admin/dashboard/ReservationsChart";
 import { CategoryPieChart } from "@/components/admin/dashboard/CategoryPieChart";
-import { LatestBookingsTable } from "@/components/admin/dashboard/LatestBookingsTable";
 import { PendingEstablishments } from "@/components/admin/dashboard/PendingEstablishments";
 import { TopDestinations } from "@/components/admin/dashboard/TopDestinations";
 import { TopEstablishments } from "@/components/admin/dashboard/TopEstablishments";
@@ -47,12 +44,6 @@ export default function AdminDashboardPage() {
       color: "bg-amber-50 text-amber-700",
     },
     {
-      icon: CalendarDays,
-      label: "Réservations",
-      value: stats.bookings,
-      color: "bg-violet-50 text-violet-700",
-    },
-    {
       icon: Wallet,
       label: "Revenus",
       value: stats.revenue,
@@ -76,15 +67,10 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      <StatsGrid cards={statCards} columns={5} loading={stats.isLoading} />
+      <StatsGrid cards={statCards} columns={4} loading={stats.isLoading} />
 
-      <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-        <ReservationsChart rows={stats.data.reservationChart} error={stats.errors.reservationChart} />
+      <div className="grid gap-4 lg:grid-cols-2">
         <CategoryPieChart rows={stats.data.categoryChart} error={stats.errors.categoryChart} />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <LatestBookingsTable />
         <PendingEstablishments />
       </div>
 
