@@ -48,8 +48,8 @@ export default function ContactPage() {
       id: 2,
       icon: "phone",
       label: "Téléphone",
-      value: "+229 0196673274",
-      href: "tel:+229 0196673274",
+      value: "+229 0196204595",
+      href: "tel:+229 0196204595",
       description: "Lun – Ven : 8h – 18h",
     },
     {
@@ -64,8 +64,8 @@ export default function ContactPage() {
       id: 4,
       icon: "message-circle",
       label: "WhatsApp",
-      value: "+229 0196673274",
-      href: "https://wa.me/2290196673274",
+      value: "+229 0196204595",
+      href: "https://wa.me/22996204595",
       description: "Support rapide",
     },
   ];
@@ -145,7 +145,7 @@ export default function ContactPage() {
     title: "Une question urgente ?",
     description:
       "Notre équipe support est disponible par WhatsApp pour vous répondre en temps réel.",
-    primaryCta: { label: "Discuter sur WhatsApp", href: "https://wa.me/22996673274" },
+    primaryCta: { label: "Discuter sur WhatsApp", href: "https://wa.me/22996204595" },
     secondaryCta: { label: "Voir la FAQ", href: "#faq" },
   };
 

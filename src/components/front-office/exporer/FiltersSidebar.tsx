@@ -18,8 +18,6 @@ import {
   useCommunes,
   useCategories,
   useAmenities,
-  useAmenityCounts,
-  useCategoryCounts,
   useGlobalPriceRange,
 } from "@/store";
 import type { EntityId } from "@/types/types";
@@ -34,8 +32,6 @@ export function FiltersSidebar() {
   const communes = useCommunes();
   const categories = useCategories();
   const amenities = useAmenities();
-  const amenityCounts = useAmenityCounts();
-  const categoryCounts = useCategoryCounts();
   const priceRange = useGlobalPriceRange();
 
   const searchQuery = usePropertyStore((s) => s.searchQuery);
@@ -62,6 +58,7 @@ export function FiltersSidebar() {
   const handleCountryChange = (val: string) => {
     setSearchQuery({
       countryId: val === "all" ? undefined : parseEntityId(val),
+      locationId: undefined,
       communeId: undefined, // reset commune when country changes
     });
   };
@@ -78,6 +75,8 @@ export function FiltersSidebar() {
     } else {
       setSearchQuery({
         categoryId: searchQuery.categoryId === categoryId ? undefined : categoryId,
+        subcategoryId: undefined,
+        activityTypeId: undefined,
       });
     }
   };
@@ -104,6 +103,7 @@ export function FiltersSidebar() {
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold">Filtres</h3>
         <button
+          type="button"
           onClick={resetFilters}
           className="flex items-center gap-1 text-xs font-medium text-emerald-700 hover:underline"
         >
@@ -194,9 +194,6 @@ export function FiltersSidebar() {
               <Checkbox checked={searchQuery.categoryId === cat.id} />
               <span className="text-sm">{cat.name}s</span>
             </div>
-            <span className="text-xs text-muted-foreground">
-              {categoryCounts[cat.id] ?? 0}
-            </span>
           </label>
         ))}
       </div>
@@ -238,7 +235,6 @@ export function FiltersSidebar() {
       <div className="space-y-2">
         <h4 className="text-sm font-semibold">Équipements</h4>
         {visibleAmenities.map((amenity) => {
-          const count = amenityCounts[amenity.id] ?? 0;
           const isChecked = searchFilters.amenityIds.includes(amenity.id);
           return (
             <label
@@ -250,7 +246,6 @@ export function FiltersSidebar() {
                 <Checkbox checked={isChecked} />
                 <span className="text-sm">{amenity.name}</span>
               </div>
-              <span className="text-xs text-muted-foreground">{count}</span>
             </label>
           );
         })}

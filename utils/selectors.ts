@@ -108,9 +108,14 @@ export const filterEstablishments = (
 
   // Localisation
   if (query.countryId != null) list = list.filter((e) => e.country_id === query.countryId);
+  if (query.locationId != null) {
+    list = list.filter(
+      (e) => e.location_id === query.locationId || e.country_id === query.locationId
+    );
+  }
   if (query.communeId != null) list = list.filter((e) => e.commune_id === query.communeId);
   if (query.localityId != null) list = list.filter((e) => e.locality_id === query.localityId);
-  if (query.destination?.trim()) {
+  if (query.destination?.trim() && query.locationId == null && query.countryId == null) {
     const destination = query.destination.trim().toLocaleLowerCase();
     list = list.filter((establishment) =>
       [establishment.address, establishment.location_name]

@@ -17,7 +17,11 @@ export function EstablishmentGrid() {
   const isLoaded = usePropertyStore((s) => s.establishmentsLoaded);
   const isLoading = usePropertyStore((s) => s.establishmentsLoading);
   const error = usePropertyStore((s) => s.establishmentsError);
-  const fetchEstablishments = usePropertyStore((s) => s.fetchEstablishments);
+  const searchQuery = usePropertyStore((s) => s.searchQuery);
+  const searchFilters = usePropertyStore((s) => s.searchFilters);
+  const page = usePropertyStore((s) => s.page);
+  const pageSize = usePropertyStore((s) => s.pageSize);
+  const fetchEstablishmentPage = usePropertyStore((s) => s.fetchEstablishmentPage);
 
   const { items, total } = useFilteredEstablishmentsPaginated();
 
@@ -73,7 +77,12 @@ export function EstablishmentGrid() {
           <h3 className="text-lg font-bold text-red-900">Chargement impossible</h3>
           <p className="mt-2 text-sm text-red-800">{error}</p>
           <Button
-            onClick={() => void fetchEstablishments().catch(() => undefined)}
+            onClick={() => void fetchEstablishmentPage(
+              searchQuery,
+              searchFilters,
+              pageSize,
+              (page - 1) * pageSize,
+            ).catch(() => undefined)}
             className="mt-5 gap-2 rounded-xl bg-emerald-800 hover:bg-emerald-900"
           >
             <RotateCcw className="h-4 w-4" />

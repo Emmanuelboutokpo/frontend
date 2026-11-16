@@ -13,7 +13,6 @@ import { EstablishmentGrid } from "./EstablishmentGrid";
 import { useUIStore } from "@/store/useUIStore";
 import {
   usePropertyStore,
-  useFilteredEstablishments,
 } from "@/store";
 
 const MapView = dynamic(
@@ -26,7 +25,7 @@ export function MobileLayout() {
   const [mapOpen, setMapOpen] = useState(false);
   const viewMode = useUIStore((s) => s.explorerViewMode);
   const isMap = viewMode === "map";
-  const filtered = useFilteredEstablishments();
+  const total = usePropertyStore((s) => s.establishmentsTotal);
 
   return (
     <div className="sm:hidden min-h-screen bg-background pb-20">
@@ -53,6 +52,7 @@ export function MobileLayout() {
           <main>
             <div className="mt-4 px-4">
               <MapView />
+              <Pagination />
             </div>
           </main>
         ) : (
@@ -61,8 +61,8 @@ export function MobileLayout() {
             <main className="px-4 pt-4">
               <div className="pb-4">
                 <h2 className="text-lg font-semibold">
-                  {filtered.length} établissement{filtered.length > 1 ? "s" : ""} trouvé
-                  {filtered.length > 1 ? "s" : ""}
+                  {total} établissement{total > 1 ? "s" : ""} trouvé
+                  {total > 1 ? "s" : ""}
                 </h2>
                 <p className="flex items-center gap-1 text-xs text-muted-foreground">
                   <MapPin className="h-3.5 w-3.5 text-emerald-700" />

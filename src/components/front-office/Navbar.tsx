@@ -152,7 +152,6 @@ export default function Navbar() {
                 </Link>)}
             </nav>
             <div className="flex items-center gap-2 border-t border-slate-100 p-4">
-              <LanguageSelect />
               <AccountButton />
             </div>
           </SheetContent>

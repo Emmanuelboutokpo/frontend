@@ -5,7 +5,7 @@ import { ResultsHeader } from "./ResultsHeader";
 import { EstablishmentGrid } from "./EstablishmentGrid";
 import { Pagination } from "./Pagination";
 import { LayoutGrid, Bed, Utensils, Compass, LucideIcon } from "lucide-react";
-import { usePropertyStore, useCategoryCounts, useCategories } from "@/store";
+import { usePropertyStore, useCategories } from "@/store";
 import { FiltersSidebar } from "./FiltersSidebar";
 import { useUIStore } from "@/store/useUIStore";
 
@@ -39,12 +39,9 @@ const MapView = dynamic(
 
 export function DesktopLayout() {
   const categories = useCategories();
-  const categoryCounts = useCategoryCounts();
   const selectedCategoryId = usePropertyStore((s) => s.searchQuery.categoryId);
   const setCategory = usePropertyStore((s) => s.setCategory);
-  const totalApproved = usePropertyStore(
-    (s) => s.data.Establishments.filter((e) => e.status === "APPROVED").length
-  );
+  const totalApproved = usePropertyStore((s) => s.establishmentsTotal);
   const viewMode = useUIStore((s) => s.explorerViewMode);
   const isMap = viewMode === "map";
   const isAllActive = !selectedCategoryId;
@@ -89,8 +86,6 @@ export function DesktopLayout() {
               };
               const Icon = meta.icon;
               const isActive = selectedCategoryId === category.id;
-              const count = categoryCounts[category.id] ?? 0;
-
               return (
                 <button
                   key={category.id}
@@ -109,9 +104,6 @@ export function DesktopLayout() {
                     <div className="flex items-center justify-between gap-1">
                       <span className="truncate text-sm font-semibold">
                         {category.name}s
-                      </span>
-                      <span className="text-xs font-bold text-muted-foreground">
-                        ({count})
                       </span>
                     </div>
                     <div className="truncate text-[11px] text-muted-foreground">
@@ -147,6 +139,7 @@ export function DesktopLayout() {
               <div className="mt-4">
                 <MapView />
               </div>
+              <Pagination />
             </main>
           ) : (
             // 📋 Mode LISTE : grille + carte latérale

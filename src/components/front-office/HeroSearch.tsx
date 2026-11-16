@@ -116,6 +116,10 @@ function HeroSearch({destinations,}: { destinations: string[]}) {
       const selectedCountry = databaseData.Countries.find(
         (country) => country.name.toLocaleLowerCase() === destination.trim().toLocaleLowerCase()
       )
+      const selectedEstablishmentLocation = databaseData.Establishments.find((establishment) =>
+        [establishment.address, establishment.location_name]
+          .some((value) => value?.toLocaleLowerCase() === destination.trim().toLocaleLowerCase())
+      )
       const guestValue =
         category === "hebergement"
           ? guests
@@ -126,7 +130,8 @@ function HeroSearch({destinations,}: { destinations: string[]}) {
       const query: SearchQuery = {
         categoryId: selectedCategory?.id,
         subcategoryId: selectedSubcategory?.id,
-        locationId: selectedCountry?.id,
+        locationId: selectedCountry?.id ?? selectedEstablishmentLocation?.location_id,
+        countryId: selectedCountry?.id,
         destination: destination.trim() || undefined,
         checkIn: category === "hebergement" && arrival ? formatDateForUrl(arrival) : undefined,
         checkOut: category === "hebergement" && departure ? formatDateForUrl(departure) : undefined,
@@ -144,7 +149,6 @@ function HeroSearch({destinations,}: { destinations: string[]}) {
 
       resetFilters()
       setSearchQuery(query)
-      await fetchEstablishments(query)
       router.push("/explorer")
     } catch (error) {
       setSearchError(

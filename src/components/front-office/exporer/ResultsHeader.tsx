@@ -5,13 +5,12 @@ import { Button } from "@/components/ui/button";
  import { useUIStore } from "@/store/useUIStore";
 import {
   usePropertyStore,
-  useFilteredEstablishments,
   useCommunes,
   useCountries,
 } from "@/store";
  
 export function ResultsHeader() {
-  const filtered = useFilteredEstablishments();
+  const total = usePropertyStore((s) => s.establishmentsTotal);
   const searchQuery = usePropertyStore((s) => s.searchQuery);
   const setSortBy = usePropertyStore((s) => s.setSortBy);
   const viewMode = useUIStore((s) => s.explorerViewMode);
@@ -40,8 +39,8 @@ export function ResultsHeader() {
     <div className="sm:mb-4 flex gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="hidden sm:block">
         <h2 className="text-lg font-semibold">
-          {filtered.length} établissement{filtered.length > 1 ? "s" : ""} trouvé
-          {filtered.length > 1 ? "s" : ""}
+          {total} établissement{total > 1 ? "s" : ""} trouvé
+          {total > 1 ? "s" : ""}
         </h2>
         <p className="flex items-center gap-1 text-xs text-muted-foreground">
           <MapPin className="h-3.5 w-3.5 text-emerald-700" />

@@ -92,6 +92,8 @@ export interface PropertyState {
   establishmentsLoaded: boolean;
   establishmentsLoading: boolean;
   establishmentsError: string | null;
+  establishmentsTotal: number;
+  establishmentPageLoaded: boolean;
 
   // État UI & Sélection
   selectedEstablishmentId: EntityId | null;
@@ -117,6 +119,12 @@ export interface PropertyState {
   resetFilters: () => void;
   reset: () => void;
   fetchEstablishments: (query?: SearchQuery) => Promise<void>;
+  fetchEstablishmentPage: (
+    query: SearchQuery,
+    filters: SearchFilters,
+    limit: number,
+    offset: number,
+  ) => Promise<void>;
   fetchPopularEstablishments: () => Promise<Establishment[]>;
   fetchNearbyEstablishments: (
     latitude: number,
@@ -193,27 +201,44 @@ function updateDataWithApiEstablishments(
   };
 }
 
-function buildEstablishmentQueryParams(query?: SearchQuery): URLSearchParams {
+function buildEstablishmentQueryParams(
+  query?: SearchQuery,
+  filters?: SearchFilters,
+): URLSearchParams {
   const params = new URLSearchParams();
-  if (!query) return params;
+  if (query) {
+    const values: Array<[string, EntityId | number | undefined]> = [
+      ["q", query.keyword?.trim() || undefined],
+      ["category_id", query.categoryId],
+      ["subcategory_id", query.subcategoryId],
+      ["location_id", query.communeId ?? query.localityId ?? query.locationId ?? query.countryId],
+      ["check_in", query.checkIn],
+      ["check_out", query.checkOut],
+      ["reservation_date", query.reservationDate],
+      ["arrival_time", query.arrivalTime],
+      ["activity_date", query.activityDate],
+      ["activity_type_id", query.activityTypeId],
+      ["guests", query.guests || undefined],
+      ["participants", query.participants || undefined],
+    ];
+    values.forEach(([key, value]) => {
+      if (value !== undefined && value !== "") params.set(key, String(value));
+    });
+  }
 
-  const values: Array<[string, EntityId | number | undefined]> = [
-    ["q", query.keyword?.trim() || undefined],
-    ["category_id", query.categoryId],
-    ["subcategory_id", query.subcategoryId],
-    ["location_id", query.locationId],
-    ["check_in", query.checkIn],
-    ["check_out", query.checkOut],
-    ["reservation_date", query.reservationDate],
-    ["arrival_time", query.arrivalTime],
-    ["activity_date", query.activityDate],
-    ["activity_type_id", query.activityTypeId],
-    ["guests", query.guests || undefined],
-    ["participants", query.participants || undefined],
-  ];
-  values.forEach(([key, value]) => {
-    if (value !== undefined && value !== "") params.set(key, String(value));
-  });
+  if (filters) {
+    filters.amenityIds.forEach((id) => params.append("amenity_ids", String(id)));
+    if (filters.priceMin !== undefined) params.set("minimum_price", String(filters.priceMin));
+    if (filters.priceMax !== undefined) params.set("maximum_price", String(filters.priceMax));
+    if (filters.ratingMin !== undefined) params.set("minimum_rating", String(filters.ratingMin));
+    const sort = {
+      price_asc: "price_asc",
+      price_desc: "price_desc",
+      rating_desc: "rating",
+      recent: "newest",
+    }[filters.sortBy ?? "recent"];
+    params.set("sort", sort);
+  }
   return params;
 }
 
@@ -253,6 +278,8 @@ async function fetchAllEstablishmentItems(params: URLSearchParams): Promise<unkn
 // ---------------------------------------------------------------------
 // STORE
 // ---------------------------------------------------------------------
+let establishmentPageRequestId = 0;
+
 export const usePropertyStore = create<PropertyState>()(
   persist(
     (set, get) => ({
@@ -282,6 +309,8 @@ export const usePropertyStore = create<PropertyState>()(
       establishmentsLoaded: false,
       establishmentsLoading: false,
       establishmentsError: null,
+      establishmentsTotal: 0,
+      establishmentPageLoaded: false,
       selectedEstablishmentId: null,
       favoriteIds: [],
 
@@ -321,6 +350,7 @@ export const usePropertyStore = create<PropertyState>()(
             ...s.searchQuery,
             categoryId: categoryId ?? undefined,
             subcategoryId: undefined, // Réinitialiser la sous-catégorie si la catégorie change
+            activityTypeId: undefined,
           },
           page: 1,
         })),
@@ -353,6 +383,7 @@ export const usePropertyStore = create<PropertyState>()(
         }),
 
       fetchEstablishments: async (query) => {
+        const requestId = ++establishmentPageRequestId;
         set((state) => ({
           establishmentsLoading: true,
           establishmentsError: null,
@@ -372,17 +403,64 @@ export const usePropertyStore = create<PropertyState>()(
         try {
           const items = await fetchAllEstablishmentItems(buildEstablishmentQueryParams(query));
           const result = updateDataWithApiEstablishments(get().data, { items }, true);
-          set({
-            data: result.data,
-            nearbyOnly: false,
-            establishmentsLoaded: true,
-          });
+          if (requestId === establishmentPageRequestId) {
+            set({
+              data: result.data,
+              nearbyOnly: false,
+              establishmentsLoaded: true,
+              establishmentsTotal: result.establishments.length,
+              establishmentPageLoaded: false,
+            });
+          }
         } catch (error) {
           const message = error instanceof Error ? error.message : "Impossible de charger les établissements.";
-          set({ establishmentsError: message });
+          if (requestId === establishmentPageRequestId) set({ establishmentsError: message });
           throw error;
         } finally {
-          set({ establishmentsLoading: false });
+          if (requestId === establishmentPageRequestId) set({ establishmentsLoading: false });
+        }
+      },
+
+      fetchEstablishmentPage: async (query, filters, limit, offset) => {
+        const requestId = ++establishmentPageRequestId;
+        const params = buildEstablishmentQueryParams(query, filters);
+        params.set("limit", String(limit));
+        params.set("offset", String(offset));
+        set((state) => ({
+          establishmentsLoading: true,
+          establishmentsError: null,
+          establishmentsTotal: 0,
+          establishmentPageLoaded: true,
+          data: {
+            ...state.data,
+            Establishments: [],
+            Photos: [],
+          },
+        }));
+        try {
+          const body = await requestEstablishmentsApi("", params);
+          const pagination = getCollectionPagination(body);
+          if (pagination.total === undefined) {
+            throw new Error("L’API n’a pas renvoyé le total des établissements.");
+          }
+          const items = extractEstablishmentItems(body);
+          const result = updateDataWithApiEstablishments(get().data, { items }, true);
+          if (requestId === establishmentPageRequestId) {
+            set({
+              data: result.data,
+              establishmentsLoaded: true,
+              establishmentsTotal: pagination.total,
+              establishmentPageLoaded: true,
+              nearbyEstablishments: [],
+              nearbyOnly: false,
+            });
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Impossible de charger les établissements.";
+          if (requestId === establishmentPageRequestId) set({ establishmentsError: message });
+          throw error;
+        } finally {
+          if (requestId === establishmentPageRequestId) set({ establishmentsLoading: false });
         }
       },
 
@@ -419,6 +497,8 @@ export const usePropertyStore = create<PropertyState>()(
           set({
             data: result.data,
             nearbyEstablishments: result.establishments,
+            establishmentsTotal: result.establishments.length,
+            establishmentPageLoaded: false,
             nearbyOnly: true,
             establishmentsLoaded: true,
           });
@@ -661,10 +741,12 @@ export const useFilteredEstablishments = (): Establishment[] => {
   const data = usePropertyStore((s) => s.data)
   const searchQuery = usePropertyStore((s) => s.searchQuery)
   const searchFilters = usePropertyStore((s) => s.searchFilters)
+  const establishmentPageLoaded = usePropertyStore((s) => s.establishmentPageLoaded)
   const nearbyEstablishments = usePropertyStore((s) => s.nearbyEstablishments)
   const nearbyOnly = usePropertyStore((s) => s.nearbyOnly)
 
   return useMemo(() => {
+    if (establishmentPageLoaded) return data.Establishments;
     const filtered = filterEstablishments(
       data,
       searchQuery,
@@ -675,7 +757,7 @@ export const useFilteredEstablishments = (): Establishment[] => {
           nearbyEstablishments.some((nearby) => nearby.id === establishment.id)
         )
       : filtered
-  }, [data, searchQuery, searchFilters, nearbyEstablishments, nearbyOnly])
+  }, [data, searchQuery, searchFilters, establishmentPageLoaded, nearbyEstablishments, nearbyOnly])
 }
 
 /**
@@ -694,21 +776,23 @@ export const useFilteredEstablishmentsPaginated = (): {
   const searchFilters = usePropertyStore((s) => s.searchFilters);
   const page = usePropertyStore((s) => s.page);
   const pageSize = usePropertyStore((s) => s.pageSize);
+  const establishmentsTotal = usePropertyStore((s) => s.establishmentsTotal);
+  const establishmentPageLoaded = usePropertyStore((s) => s.establishmentPageLoaded);
   const nearbyEstablishments = usePropertyStore((s) => s.nearbyEstablishments);
   const nearbyOnly = usePropertyStore((s) => s.nearbyOnly);
 
-  const matchingEstablishments = filterEstablishments(data, searchQuery, searchFilters);
+  const matchingEstablishments = establishmentPageLoaded
+    ? data.Establishments
+    : filterEstablishments(data, searchQuery, searchFilters);
   const filtered = nearbyOnly
     ? matchingEstablishments.filter((establishment) =>
         nearbyEstablishments.some((nearby) => nearby.id === establishment.id)
       )
     : matchingEstablishments;
-  const total = filtered.length;
+  const total = establishmentPageLoaded ? establishmentsTotal : filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const startIndex = (page - 1) * pageSize;
-  const items = filtered.slice(startIndex, startIndex + pageSize);
 
-  return { items, total, page, pageSize, totalPages };
+  return { items: filtered, total, page, pageSize, totalPages };
 };
 
 /**
