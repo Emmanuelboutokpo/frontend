@@ -11,6 +11,7 @@ import {
   useFilteredEstablishments,
 } from "@/store";
 import { getCoverPhoto } from "@/utils/selectors";
+import { getEstablishmentDetailPath } from "@/utils/establishment.helpers";
 
 // =====================================================================
 // CORRECTION DES ICÔNES LEAFLET (bug classique avec Next.js)
@@ -160,8 +161,11 @@ export function MapView() {
             (sc) => sc.id === est.subcategory_id
           ) ?? est.subcategory;
           const categorySlug = category?.slug ?? "hebergement";
-          const subPath = subcategory?.slug ? `/${subcategory.slug}` : "";
-          const detailUrl = `/${categorySlug}${subPath}/${est.slug}`;
+          const detailUrl = getEstablishmentDetailPath(
+            categorySlug,
+            subcategory?.slug,
+            est.slug
+          );
 
           return (
             <Marker

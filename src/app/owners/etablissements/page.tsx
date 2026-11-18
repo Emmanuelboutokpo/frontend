@@ -208,7 +208,14 @@ export default function AdminEstablishmentsPage() {
   }, [load, page, perPage, search, statusFilter, categoryFilter]);
 
   const maxPage = Math.max(1, Math.ceil(total / perPage));
-  const formCategories = useMemo(() => categories, [categories]);
+  const formCategories = useMemo(
+    () => categories.filter((category) => {
+      const slug = category.slug?.toLocaleLowerCase("fr")
+        ?? category.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr");
+      return slug === "hebergement";
+    }),
+    [categories],
+  );
 
   const openCreate = () => {
     setSelected(null);
@@ -238,7 +245,9 @@ export default function AdminEstablishmentsPage() {
     if (step === 0) {
       if (values.name.trim().length < 2) return "Le nom doit contenir au moins 2 caractères.";
       if (values.slug.trim().length < 2) return "Le slug doit contenir au moins 2 caractères.";
-      if (!values.category_id) return "Veuillez sélectionner une catégorie.";
+      if (!formCategories.some((category) => category.id === values.category_id)) {
+        return "Les restaurants et lieux de loisirs sont créés par l’administration.";
+      }
       if (values.currency.trim().length !== 3) return "La devise doit contenir exactement 3 lettres.";
     }
     if (step === 1) {

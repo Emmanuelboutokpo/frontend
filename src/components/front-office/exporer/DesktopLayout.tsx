@@ -103,7 +103,7 @@ export function DesktopLayout() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-1">
                       <span className="truncate text-sm font-semibold">
-                        {category.name}s
+                        {category.name}
                       </span>
                     </div>
                     <div className="truncate text-[11px] text-muted-foreground">

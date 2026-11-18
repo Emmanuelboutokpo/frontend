@@ -4,13 +4,15 @@ import { isTokenExpiredResponse, useAuthStore } from "@/store/authStore";
 const API_URL = (
   process.env.NEXT_PUBLIC_API_URL ?? "https://bestreservs-api.onrender.com"
 ).replace(/\/+$/, "");
-const ADMIN_ACCOUNTS_PATH = "/api/v1/accounts";
+const ADMIN_ACCOUNTS_PATH = "/api/v1/admin/accounts";
 const OWNER_ACCOUNTS_PATH = "/api/v1/owners/accounts";
 
+function isOwnerAccount(): boolean {
+  return useAuthStore.getState().role === "PROPRIETAIRE";
+}
+
 function accountsPath(): string {
-  return useAuthStore.getState().role === "PROPRIETAIRE"
-    ? OWNER_ACCOUNTS_PATH
-    : ADMIN_ACCOUNTS_PATH;
+  return isOwnerAccount() ? OWNER_ACCOUNTS_PATH : ADMIN_ACCOUNTS_PATH;
 }
 
 type ApiRecord = Record<string, unknown>;
@@ -32,8 +34,8 @@ type AdminAccountState = {
   updateProfile: (patch: Pick<AdminAccountProfile, "firstName" | "lastName" | "email" | "phone">) => Promise<void>;
   uploadAvatar: (file: File) => Promise<void>;
   deleteAvatar: () => Promise<void>;
-  changePassword: (newPassword: string, confirmPassword: string) => Promise<void>;
-  deleteAccount: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string, confirmPassword: string) => Promise<void>;
+  deleteAccount: (currentPassword: string) => Promise<void>;
   reset: () => void;
 };
 
@@ -125,7 +127,7 @@ function syncAuthProfile(profile: AdminAccountProfile) {
 }
 
 function profilePath(profile: AdminAccountProfile): string {
-  return `/${encodeURIComponent(profile.id)}`;
+  return isOwnerAccount() ? `/${encodeURIComponent(profile.id)}` : "/me";
 }
 
 export const useAdminAccountStore = create<AdminAccountState>((set, get) => ({
@@ -156,7 +158,11 @@ export const useAdminAccountStore = create<AdminAccountState>((set, get) => ({
     try {
       const response = await request(profilePath(currentProfile), {
         method: "PATCH",
-        body: JSON.stringify(patch),
+        body: JSON.stringify({
+          firstName: patch.firstName,
+          lastName: patch.lastName,
+          phone: patch.phone,
+        }),
       });
       const profile = mapProfile(response, { ...currentProfile, ...patch });
       set({ profile });
@@ -202,14 +208,18 @@ export const useAdminAccountStore = create<AdminAccountState>((set, get) => ({
     }
   },
 
-  changePassword: async (newPassword, confirmPassword) => {
+  changePassword: async (currentPassword, newPassword, confirmPassword) => {
     const profile = get().profile;
     if (!profile) throw new Error("Le profil administrateur doit être chargé avant le changement de mot de passe.");
     set({ error: null });
     try {
       await request(`${profilePath(profile)}/password`, {
         method: "PUT",
-        body: JSON.stringify({ new_password: newPassword, confirm_password: confirmPassword }),
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword,
+          confirm_password: confirmPassword,
+        }),
       });
     } catch (error) {
       set({ error: error instanceof Error ? error.message : "Impossible de modifier le mot de passe." });
@@ -217,12 +227,18 @@ export const useAdminAccountStore = create<AdminAccountState>((set, get) => ({
     }
   },
 
-  deleteAccount: async () => {
+  deleteAccount: async (currentPassword) => {
+    if (!isOwnerAccount()) {
+      throw new Error("La suppression du compte administrateur n’est pas disponible.");
+    }
     const profile = get().profile;
     if (!profile) throw new Error("Le profil administrateur doit être chargé avant la suppression du compte.");
     set({ error: null });
     try {
-      await request(profilePath(profile), { method: "DELETE" });
+      await request(profilePath(profile), {
+        method: "DELETE",
+        body: JSON.stringify({ confirmation: "DELETE", current_password: currentPassword }),
+      });
       set({ profile: null });
       useAuthStore.getState().clearSession();
     } catch (error) {

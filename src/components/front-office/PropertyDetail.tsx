@@ -35,6 +35,7 @@ import AuthDialog from "@/components/front-office/AuthDialog";
 import { useAuthStore, usePropertyStore } from "@/store";
 import PropertyShowcase from "@/components/front-office/PropertyShowcase";
 import { formatLocation } from "@/utils/selectors";
+import { getEstablishmentDetailPath } from "@/utils/establishment.helpers";
 
 // =====================================================================
 // IMPORT DYNAMIQUE DE LA CARTE (Leaflet = client only)
@@ -722,9 +723,11 @@ export default function PropertyDetail({ slug }: PropertyDetailProps) {
   reviewCount={reviews.length}
   typeName={subcategory?.name ?? category?.name}
   coverUrl={photos[0]?.url}
-  detailUrl={`/${category?.slug ?? "hebergement"}${
-    subcategory?.slug ? `/${subcategory.slug}` : ""
-  }/${property.slug}`}
+  detailUrl={getEstablishmentDetailPath(
+    category?.slug ?? "hebergement",
+    subcategory?.slug,
+    property.slug
+  )}
 />
               </div>
             </section>

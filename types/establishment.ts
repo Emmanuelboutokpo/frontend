@@ -77,7 +77,9 @@ export interface EstablishmentFilters {
 export interface AdminCategory {
   id: EntityUuid;
   name: string;
+  slug?: string;
   icon: string | null;
+  img: string | null;
   subcategories?: AdminSubcategory[];
 }
 

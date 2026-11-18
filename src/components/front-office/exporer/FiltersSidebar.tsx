@@ -192,7 +192,7 @@ export function FiltersSidebar() {
           >
             <div className="flex items-center gap-2">
               <Checkbox checked={searchQuery.categoryId === cat.id} />
-              <span className="text-sm">{cat.name}s</span>
+              <span className="text-sm">{cat.name}</span>
             </div>
           </label>
         ))}

@@ -19,6 +19,7 @@ import {
   type ReservationCreatePayload,
   type ReservationPaymentMethod,
 } from "@/store/useCustomerReservationsStore";
+import { getEstablishmentDetailPath } from "@/utils/establishment.helpers";
 
 interface Props {
   params: Promise<{ establishmentId: string }>;
@@ -268,7 +269,11 @@ export default function ReservationPage({ params }: Props) {
     );
   }
 
-  const backUrl = `/${category?.slug === "loisir" ? "loisirs" : category?.slug ?? "explorer"}${subcategory?.slug ? `/${subcategory.slug}` : ""}/${property.slug}`;
+  const backUrl = getEstablishmentDetailPath(
+    category?.slug === "loisir" ? "loisirs" : category?.slug,
+    subcategory?.slug,
+    property.slug
+  );
   const subtotal = quote?.subtotal ?? 0;
   const serviceFee = quote?.service_fee ?? 0;
   const totalAmount = quote?.total ?? 0;

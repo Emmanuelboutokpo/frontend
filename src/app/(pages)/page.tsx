@@ -59,8 +59,6 @@ export default function Home() {
     )),
     [data.Establishments]
   )
-  const approved = data.Establishments.filter((property) => property.status === 'APPROVED')
-
   useEffect(() => {
     if (requestStarted.current) return
     requestStarted.current = true
@@ -125,9 +123,8 @@ export default function Home() {
         {data.Categories.map((category, index) => {
           const accent = categoryAccents[index];
           const Icon = accent.icon;
-          const image = photos[approved.find((property) => property.category_id === category.id)?.id ?? -1];
           return <Link key={category.id} href={`/explorer`} onClick={(e) => handleCategoryClick(e, category)} className="group relative h-56 sm:h-64 overflow-hidden rounded-2xl bg-[#09234a] shadow-sm transition hover:-translate-y-1 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f6ad2e]">
-            {image && <img src={image.url} alt="" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" />}
+            {category.img && <img src={category.img} alt="" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" />}
             <div className="absolute inset-0 bg-gradient-to-t from-[#061c38]/85 via-[#061c38]/10 to-transparent" />
             <div className="absolute inset-x-3 bottom-3 flex items-center gap-3 rounded-xl bg-white p-3 shadow-lg">
               <span className={`grid h-10 w-10 place-items-center rounded-full text-white ${accent.color}`}>
@@ -135,7 +132,7 @@ export default function Home() {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block font-extrabold tracking-tight text-black">
-                  {category.name}s
+                  {category.name}
                 </span>
                 <span className="mt-0.5 block truncate text-[11px] text-slate-500">
                   {accent.description}

@@ -16,10 +16,25 @@ const API_URL = (
   process.env.NEXT_PUBLIC_API_URL ?? "https://bestreservs-api.onrender.com"
 ).replace(/\/+$/, "");
 const ADMIN_ESTABLISHMENTS_PATH = "/api/v1/admin/establishments";
+const ADMIN_MANAGED_ESTABLISHMENTS_PATH = "/api/v1/admin/managed-establishments";
 const OWNER_ESTABLISHMENTS_PATH = "/api/v1/owners/establishments";
 const PAGE_LIMIT = 100;
 type ApiRecord = Record<string, unknown>;
 let establishmentListRequestId = 0;
+
+export interface ManagedEstablishmentsFilters {
+  category_type?: "restaurant" | "loisir";
+  category_id?: string;
+  status?: EstablishmentStatus;
+  q?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface AdminEstablishmentPage {
+  items: AdminEstablishment[];
+  total: number;
+}
 
 function establishmentsPath(): string {
   return useAuthStore.getState().role === "PROPRIETAIRE"
@@ -51,6 +66,12 @@ interface State {
   loadStats: () => Promise<void>;
   loadReferences: () => Promise<void>;
   loadDetails: (id: string) => Promise<AdminEstablishment>;
+  loadManagedEstablishments: (filters?: ManagedEstablishmentsFilters) => Promise<AdminEstablishmentPage>;
+  loadManagedEstablishmentDetails: (id: string) => Promise<AdminEstablishment>;
+  createManagedEstablishment: (payload: EstablishmentPayload) => Promise<AdminEstablishment>;
+  updateManagedEstablishment: (id: string, payload: Partial<EstablishmentPayload>) => Promise<AdminEstablishment>;
+  removeManagedEstablishment: (id: string) => Promise<void>;
+  addManagedEstablishmentPhotos: (id: string, files: File[]) => Promise<void>;
   createEstablishment: (payload: EstablishmentPayload) => Promise<AdminEstablishment>;
   updateEstablishment: (id: string, payload: Partial<EstablishmentPayload>) => Promise<AdminEstablishment>;
   removeEstablishment: (id: string) => Promise<void>;
@@ -61,9 +82,10 @@ interface State {
   setCoverPhoto: (photoId: string) => Promise<void>;
   addAmenities: (id: string, amenityIds: string[]) => Promise<void>;
   removeAmenity: (id: string, amenityId: string) => Promise<void>;
-  createCategory: (name: string, icon?: string) => Promise<void>;
-  updateCategory: (id: string, patch: { name?: string; icon?: string }) => Promise<void>;
+  createCategory: (name: string, icon?: string, image?: File) => Promise<void>;
+  updateCategory: (id: string, patch: { name?: string; icon?: string | null }, image?: File) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
+  deleteCategoryImage: (id: string) => Promise<void>;
   createSubcategory: (categoryId: string, name: string, icon?: string) => Promise<void>;
   updateSubcategory: (id: string, patch: { category_id?: string; name?: string; icon?: string }) => Promise<void>;
   deleteSubcategory: (id: string) => Promise<void>;
@@ -210,10 +232,17 @@ function isAvailabilityStatus(value: unknown): value is AvailabilityStatus {
 
 function normalizeCategory(value: unknown): AdminCategory {
   if (!isRecord(value) || typeof value.id !== "string") throw new Error("Catégorie invalide reçue de l’API.");
+  const image = value.img;
   return {
     id: value.id,
     name: asString(value.name),
+    slug: asString(value.slug) || undefined,
     icon: typeof value.icon === "string" ? value.icon : null,
+    img: typeof image === "string"
+      ? image
+      : isRecord(image) && typeof image.url === "string"
+        ? image.url
+        : null,
     subcategories: Array.isArray(value.subcategories)
       ? value.subcategories.filter(isRecord).map(normalizeSubcategory)
       : [],
@@ -382,6 +411,45 @@ export const useAdminEstablishmentsStore = create<State>((set, get) => ({
   },
 
   loadDetails: async (id) => normalizeEstablishment(await request(`${establishmentsPath()}/${id}`)),
+  loadManagedEstablishments: async (filters = {}) => {
+    const params = new URLSearchParams({
+      limit: String(filters.limit ?? 20),
+      offset: String(filters.offset ?? 0),
+    });
+    if (filters.category_type) params.set("category_type", filters.category_type);
+    if (filters.category_id) params.set("category_id", filters.category_id);
+    if (filters.status) params.set("status", filters.status);
+    if (filters.q && filters.q.trim().length >= 2) params.set("q", filters.q.trim());
+    const response = await request(`${ADMIN_MANAGED_ESTABLISHMENTS_PATH}?${params}`);
+    if (!isRecord(response) || !Array.isArray(response.items)) {
+      throw new Error("L’API a renvoyé une liste de restaurants et loisirs invalide.");
+    }
+    return {
+      items: response.items.map(normalizeEstablishment),
+      total: asNumber(response.total) ?? 0,
+    };
+  },
+  loadManagedEstablishmentDetails: async (id) =>
+    normalizeEstablishment(await request(`${ADMIN_MANAGED_ESTABLISHMENTS_PATH}/${id}`)),
+  createManagedEstablishment: async (payload) =>
+    normalizeEstablishment(await request(ADMIN_MANAGED_ESTABLISHMENTS_PATH, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    })),
+  updateManagedEstablishment: async (id, payload) =>
+    normalizeEstablishment(await request(`${ADMIN_MANAGED_ESTABLISHMENTS_PATH}/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    })),
+  removeManagedEstablishment: async (id) => {
+    await request(`${ADMIN_MANAGED_ESTABLISHMENTS_PATH}/${id}`, { method: "DELETE" });
+  },
+  addManagedEstablishmentPhotos: async (id, files) => {
+    if (!files.length) return;
+    const body = new FormData();
+    files.forEach((file) => body.append("files", file));
+    await request(`${ADMIN_ESTABLISHMENTS_PATH}/${id}/photos`, { method: "POST", body });
+  },
   createEstablishment: async (payload) => {
     const result = normalizeEstablishment(await request(establishmentsPath(), { method: "POST", body: JSON.stringify(payload) }));
     await get().loadEstablishments();
@@ -442,16 +510,30 @@ export const useAdminEstablishmentsStore = create<State>((set, get) => ({
     await request(`${establishmentsPath()}/${id}/amenities/${amenityId}`, { method: "DELETE" });
     await get().loadEstablishments();
   },
-  createCategory: async (name, icon) => {
-    await request("/api/v1/admin/categories", { method: "POST", body: JSON.stringify({ name, icon: icon || null }) });
+  createCategory: async (name, icon, image) => {
+    const body = new FormData();
+    body.append("name", name);
+    if (icon) body.append("icon", icon);
+    if (image) body.append("img", image);
+    await request("/api/v1/admin/categories", { method: "POST", body });
     await get().loadReferences();
   },
-  updateCategory: async (id, patch) => {
-    await request(`/api/v1/admin/categories/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
+  updateCategory: async (id, patch, image) => {
+    const body = image ? new FormData() : JSON.stringify(patch);
+    if (image && body instanceof FormData) {
+      if (patch.name !== undefined) body.append("name", patch.name);
+      if (patch.icon !== undefined) body.append("icon", patch.icon ?? "");
+      body.append("img", image);
+    }
+    await request(`/api/v1/admin/categories/${id}`, { method: "PATCH", body });
     await get().loadReferences();
   },
   deleteCategory: async (id) => {
     await request(`/api/v1/admin/categories/${id}`, { method: "DELETE" });
+    await get().loadReferences();
+  },
+  deleteCategoryImage: async (id) => {
+    await request(`/api/v1/admin/categories/${id}/image`, { method: "DELETE" });
     await get().loadReferences();
   },
   createSubcategory: async (categoryId, name, icon) => {
@@ -478,42 +560,42 @@ export const useAdminEstablishmentsStore = create<State>((set, get) => ({
   createLocation: async (payload) => {
     const path = useAuthStore.getState().role === "PROPRIETAIRE"
       ? "/api/v1/owners/locations"
-      : "/api/v1/locations";
+      : "/api/v1/admin/locations";
     await request(path, { method: "POST", body: JSON.stringify(payload) });
     await get().loadReferences();
   },
   updateLocation: async (id, patch) => {
     const path = useAuthStore.getState().role === "PROPRIETAIRE"
       ? `/api/v1/owners/locations/${id}`
-      : `/api/v1/locations/${id}`;
+      : `/api/v1/admin/locations/${id}`;
     await request(path, { method: "PATCH", body: JSON.stringify(patch) });
     await get().loadReferences();
   },
   deleteLocation: async (id) => {
     const path = useAuthStore.getState().role === "PROPRIETAIRE"
       ? `/api/v1/owners/locations/${id}`
-      : `/api/v1/locations/${id}`;
+      : `/api/v1/admin/locations/${id}`;
     await request(path, { method: "DELETE" });
     await get().loadReferences();
   },
   createAmenity: async (name, icon) => {
     const path = useAuthStore.getState().role === "PROPRIETAIRE"
       ? "/api/v1/owners/amenities"
-      : "/admin/amenities";
+      : "/api/v1/admin/amenities";
     await request(path, { method: "POST", body: JSON.stringify({ name, icon: icon || null }) });
     await get().loadReferences();
   },
   updateAmenity: async (id, patch) => {
     const path = useAuthStore.getState().role === "PROPRIETAIRE"
       ? `/api/v1/owners/amenities/${id}`
-      : `/admin/amenities/${id}`;
+      : `/api/v1/admin/amenities/${id}`;
     await request(path, { method: "PATCH", body: JSON.stringify(patch) });
     await get().loadReferences();
   },
   deleteAmenity: async (id) => {
     const path = useAuthStore.getState().role === "PROPRIETAIRE"
       ? `/api/v1/owners/amenities/${id}`
-      : `/admin/amenities/${id}`;
+      : `/api/v1/admin/amenities/${id}`;
     await request(path, { method: "DELETE" });
     await get().loadReferences();
   },

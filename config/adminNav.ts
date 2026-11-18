@@ -20,6 +20,8 @@ export const adminNav = [
       { label: "Utilisateurs", href: "/admin/users", icon: Users },
       { label: "Validations", href: "/admin/validations", icon: CheckCircle2 },
       { label: "Établissements", href: "/admin/etablissements", icon: Building2 },
+      { label: "Restaurants et loisirs", href: "/admin/restaurants-loisirs", icon: ListTree },
+      { label: "Référentiels", href: "/admin/referentiels", icon: ListTree },
       { label: "Transactions", href: "/admin/transactions", icon: ReceiptText },
       { label: "Paramètres", href: "/admin/settings", icon: Settings },
       { label: "Mon profil", href: "/admin/profil", icon: UserRound },

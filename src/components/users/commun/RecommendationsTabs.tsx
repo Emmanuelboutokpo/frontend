@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { usePropertyStore } from "@/store";
 import { getCoverPhoto } from "@/utils/selectors";
+import { getEstablishmentDetailPath } from "@/utils/establishment.helpers";
 import type { Establishment } from "@/types/types";
 
 // =====================================================================
@@ -194,10 +195,11 @@ export function RecommendationsTabs() {
             const commune = data.Communes.find((c) => c.id === e.commune_id);
             const country = data.Countries.find((c) => c.id === e.country_id);
 
-            const parts = ["/explorer", category?.slug ?? "hebergement"];
-            if (subcategory?.slug) parts.push(subcategory.slug);
-            parts.push(e.slug);
-            const href = parts.join("/");
+            const href = getEstablishmentDetailPath(
+              category?.slug ?? "hebergement",
+              subcategory?.slug,
+              e.slug
+            );
 
             return (
               <RecommendationCard

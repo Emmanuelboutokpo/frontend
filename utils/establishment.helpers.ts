@@ -1,3 +1,16 @@
+export function getEstablishmentDetailPath(
+  categorySlug: string | undefined,
+  subcategorySlug: string | undefined,
+  establishmentSlug: string
+): string {
+  const categoryPath = categorySlug ?? "explorer";
+  const subcategoryPath =
+    categoryPath === "restaurant" || !subcategorySlug
+      ? ""
+      : `/${subcategorySlug}`;
+  return `/${categoryPath}${subcategoryPath}/${establishmentSlug}`;
+}
+
 export function formatEstPrice(est: {
   price: number;
   currency: string;

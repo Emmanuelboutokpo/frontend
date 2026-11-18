@@ -41,7 +41,6 @@ import { useAdminEstablishmentsStore } from "@/store/useAdminEstablishmentsStore
 import type { AdminCategory, AdminLocation } from "@/types/establishment";
 
 type CatalogType = "subcategory" | "location" | "amenity";
-type CatalogTab = "all" | "categories" | "locations" | "amenities";
 type CatalogForm = {
   id?: string;
   name: string;
@@ -78,21 +77,23 @@ const TYPE_LABELS: Record<CatalogType, string> = {
   amenity: "équipement",
 };
 
-const TABS: { id: CatalogTab; label: string }[] = [
-  { id: "all", label: "Tout gérer" },
-  { id: "categories", label: "Catégories" },
-  { id: "locations", label: "Lieux" },
-  { id: "amenities", label: "Équipements" },
-];
+function isAccommodationCategory(category: AdminCategory): boolean {
+  const identifier = (category.slug || category.name)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLocaleLowerCase("fr")
+    .replace(/s$/, "");
+  return identifier === "hebergement";
+}
 
 export default function AdminReferencesPage() {
   const categories = useAdminEstablishmentsStore((state) => state.categories);
   const locations = useAdminEstablishmentsStore((state) => state.locations);
   const amenities = useAdminEstablishmentsStore((state) => state.amenities);
   const loadReferences = useAdminEstablishmentsStore((state) => state.loadReferences);
-  const [type, setType] = useState<CatalogType>("subcategory");
-  const [tab, setTab] = useState<CatalogTab>("all");
   const [search, setSearch] = useState("");
+  const [type, setType] = useState<CatalogType>("subcategory");
   const [form, setForm] = useState<CatalogForm>(EMPTY);
   const [formOpen, setFormOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<PendingDelete>(null);
@@ -117,9 +118,13 @@ export default function AdminReferencesPage() {
     void refresh();
   }, [refresh]);
 
+  const accommodationCategories = useMemo(
+    () => categories.filter(isAccommodationCategory),
+    [categories],
+  );
   const query = search.trim().toLocaleLowerCase("fr");
   const visibleCategories = useMemo(
-    () => categories
+    () => accommodationCategories
       .map((category) => ({
         ...category,
         subcategories: (category.subcategories ?? []).filter((item) => !query || item.name.toLocaleLowerCase("fr").includes(query)),
@@ -127,11 +132,7 @@ export default function AdminReferencesPage() {
       .filter((category) => !query
         || category.name.toLocaleLowerCase("fr").includes(query)
         || category.subcategories?.length),
-    [categories, query],
-  );
-  const visibleAmenities = useMemo(
-    () => amenities.filter((amenity) => !query || amenity.name.toLocaleLowerCase("fr").includes(query)),
-    [amenities, query],
+    [accommodationCategories, query],
   );
   const visibleLocations = useMemo(
     () => locations.filter((location) => !query
@@ -140,17 +141,43 @@ export default function AdminReferencesPage() {
       || location.country_code.toLocaleLowerCase("fr").includes(query)),
     [locations, query],
   );
+  const visibleAmenities = useMemo(
+    () => amenities.filter((amenity) => !query || amenity.name.toLocaleLowerCase("fr").includes(query)),
+    [amenities, query],
+  );
 
-  const beginCreate = (catalogType: CatalogType, categoryId = "") => {
-    setType(catalogType);
-    setForm({ ...EMPTY, category_id: categoryId || categories[0]?.id || "" });
+  const beginCreate = (categoryId = accommodationCategories[0]?.id ?? "") => {
+    setType("subcategory");
+    setForm({ ...EMPTY, category_id: categoryId });
     setError(null);
     setFormOpen(true);
   };
 
-  const beginEdit = (
-    catalogType: CatalogType,
-    value: NonNullable<AdminCategory["subcategories"]>[number] | AdminLocation | { id: string; name: string; icon: string | null },
+  const beginCreateCatalogItem = (catalogType: Exclude<CatalogType, "subcategory">) => {
+    setType(catalogType);
+    setForm(EMPTY);
+    setError(null);
+    setFormOpen(true);
+  };
+
+  const beginEditSubcategory = (
+    value: NonNullable<AdminCategory["subcategories"]>[number],
+  ) => {
+    setType("subcategory");
+    setForm({
+      ...EMPTY,
+      id: value.id,
+      name: value.name,
+      icon: value.icon ?? "",
+      category_id: value.category_id,
+    });
+    setError(null);
+    setFormOpen(true);
+  };
+
+  const beginEditCatalogItem = (
+    catalogType: Exclude<CatalogType, "subcategory">,
+    value: AdminLocation | { id: string; name: string; icon: string | null },
   ) => {
     setType(catalogType);
     setForm({
@@ -158,7 +185,7 @@ export default function AdminReferencesPage() {
       id: value.id,
       name: value.name,
       icon: "icon" in value && value.icon ? value.icon : "",
-      category_id: "category_id" in value ? value.category_id : "",
+      category_id: "",
       type: "type" in value ? value.type : "CITY",
       country_code: "country_code" in value ? value.country_code : "BJ",
       parent_id: "parent_id" in value && value.parent_id ? value.parent_id : "",
@@ -179,8 +206,13 @@ export default function AdminReferencesPage() {
     const api = useAdminEstablishmentsStore.getState();
     try {
       if (type === "subcategory") {
-        if (form.id) await api.updateSubcategory(form.id, { name: form.name, icon: form.icon, category_id: form.category_id });
-        else await api.createSubcategory(form.category_id, form.name, form.icon);
+        const accommodationCategory = accommodationCategories.find((category) => category.id === form.category_id);
+        if (!accommodationCategory) {
+          setError("Aucune catégorie d’hébergement n’est disponible pour cette action.");
+          return;
+        }
+        if (form.id) await api.updateSubcategory(form.id, { name: form.name, icon: form.icon, category_id: accommodationCategory.id });
+        else await api.createSubcategory(accommodationCategory.id, form.name, form.icon);
       } else if (type === "amenity") {
         if (form.id) await api.updateAmenity(form.id, { name: form.name, icon: form.icon });
         else await api.createAmenity(form.name, form.icon);
@@ -214,8 +246,8 @@ export default function AdminReferencesPage() {
     try {
       const api = useAdminEstablishmentsStore.getState();
       if (pendingDelete.type === "subcategory") await api.deleteSubcategory(pendingDelete.id);
-      if (pendingDelete.type === "amenity") await api.deleteAmenity(pendingDelete.id);
-      if (pendingDelete.type === "location") await api.deleteLocation(pendingDelete.id);
+      else if (pendingDelete.type === "amenity") await api.deleteAmenity(pendingDelete.id);
+      else await api.deleteLocation(pendingDelete.id);
       setPendingDelete(null);
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : "La suppression a échoué.");
@@ -225,50 +257,22 @@ export default function AdminReferencesPage() {
     }
   };
 
-  const counts: Record<CatalogTab, number> = {
-    all: categories.length + locations.length + amenities.length,
-    categories: categories.length,
-    locations: locations.length,
-    amenities: amenities.length,
-  };
-  const showCategories = tab === "all" || tab === "categories";
-  const showLocations = tab === "all" || tab === "locations";
-  const showAmenities = tab === "all" || tab === "amenities";
-
   return (
     <div className="space-y-6">
       <AdminPageHeader
         breadcrumbs={[{ label: "Dashboard", href: "/owners" }, { label: "Référentiels" }]}
         title="Référentiels"
-        description="Consultez les catégories et gérez vos lieux, sous-catégories et équipements."
-        actions={[{ label: "Ajouter une donnée", icon: Plus, onClick: () => beginCreate(tab === "locations" ? "location" : tab === "amenities" ? "amenity" : "subcategory") }]}
+        description="Gérez les sous-catégories d’hébergements, les lieux et les équipements."
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <SummaryCard icon={Layers3} label="Catégories" count={categories.length} tint="bg-emerald-50 text-emerald-700" />
+        <SummaryCard icon={Layers3} label="Sous-catégories d’hébergements" count={accommodationCategories.reduce((total, category) => total + (category.subcategories?.length ?? 0), 0)} tint="bg-emerald-50 text-emerald-700" />
         <SummaryCard icon={Globe2} label="Lieux" count={locations.length} tint="bg-blue-50 text-blue-700" />
         <SummaryCard icon={Wifi} label="Équipements" count={amenities.length} tint="bg-violet-50 text-violet-700" />
       </div>
 
       <Card className="overflow-hidden rounded-2xl border-slate-200 shadow-sm">
-        <div className="flex flex-col gap-4 border-b border-slate-100 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex gap-1 overflow-x-auto">
-            {TABS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setTab(item.id)}
-                className={`shrink-0 rounded-xl px-3 py-2 text-sm font-semibold transition ${
-                  tab === item.id ? "bg-emerald-50 text-emerald-800" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-                }`}
-              >
-                {item.label}
-                <span className={`ml-2 rounded-full px-1.5 py-0.5 text-[10px] ${tab === item.id ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-500"}`}>
-                  {counts[item.id]}
-                </span>
-              </button>
-            ))}
-          </div>
+        <div className="flex justify-end border-b border-slate-100 p-4 sm:p-5">
           <div className="relative w-full lg:max-w-sm">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
@@ -294,103 +298,101 @@ export default function AdminReferencesPage() {
           </div>
         ) : (
           <div className="space-y-8 p-4 sm:p-6">
-            {showCategories && (
-              <section className="space-y-4">
-                <SectionHeading
-                  icon={Layers3}
-                  title="Catégories et sous-catégories"
-                  description="Les catégories sont définies par l’administration ; vous pouvez gérer leurs sous-catégories."
-                  count={categories.length}
-                  onCreate={() => beginCreate("subcategory")}
-                  createLabel="Nouvelle sous-catégorie"
-                />
-                {visibleCategories.length ? (
-                  <div className="grid gap-3 xl:grid-cols-2">
-                    {visibleCategories.map((category) => (
-                      <CategoryCard
-                        key={category.id}
-                        category={category}
-                        onAddSubcategory={() => beginCreate("subcategory", category.id)}
-                        onEditSubcategory={(subcategory) => beginEdit("subcategory", subcategory)}
-                        onDeleteSubcategory={(subcategory) => setPendingDelete({ type: "subcategory", id: subcategory.id, name: subcategory.name })}
-                      />
-                    ))}
-                  </div>
-                ) : <EmptyState label="Aucune catégorie ne correspond à la recherche." />}
-              </section>
-            )}
-
-            {showLocations && (
-              <section className="space-y-4">
-                <SectionHeading
-                  icon={MapPin}
-                  title="Lieux géographiques"
-                  description="Définissez les pays, régions, villes et quartiers disponibles pour vos établissements."
-                  count={locations.length}
-                  onCreate={() => beginCreate("location")}
-                  createLabel="Ajouter un lieu"
-                />
-                {visibleLocations.length ? (
-                  <div className="overflow-x-auto rounded-xl border border-slate-200">
-                    <table className="w-full min-w-[620px] text-left text-sm">
-                      <thead className="bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                        <tr><th className="px-4 py-3">Lieu</th><th className="px-4 py-3">Type</th><th className="px-4 py-3">Pays</th><th className="px-4 py-3">Statut</th><th className="px-4 py-3 text-right">Actions</th></tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {visibleLocations.map((location) => (
-                          <tr key={location.id} className="transition hover:bg-slate-50/70">
-                            <td className="px-4 py-3 font-semibold text-slate-800">{location.name}</td>
-                            <td className="px-4 py-3"><Badge variant="outline" className="border-blue-100 bg-blue-50 text-[10px] text-blue-700">{location.type}</Badge></td>
-                            <td className="px-4 py-3 text-slate-600">{location.country_code}</td>
-                            <td className="px-4 py-3"><Badge variant="outline" className={location.is_active ? "border-emerald-200 bg-emerald-50 text-[10px] text-emerald-700" : "border-slate-200 bg-slate-50 text-[10px] text-slate-500"}>{location.is_active ? "Actif" : "Inactif"}</Badge></td>
-                            <td className="px-4 py-3">
-                              <RowActions
-                                label={location.name}
-                                onEdit={() => beginEdit("location", location)}
-                                onDelete={() => setPendingDelete({ type: "location", id: location.id, name: location.name })}
-                              />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : <EmptyState label="Aucun lieu ne correspond à la recherche." />}
-              </section>
-            )}
-
-            {showAmenities && (
-              <section className="space-y-4">
-                <SectionHeading
-                  icon={Wifi}
-                  title="Équipements"
-                  description="Maintenez la liste des équipements disponibles."
-                  count={amenities.length}
-                  onCreate={() => beginCreate("amenity")}
-                  createLabel="Ajouter un équipement"
-                />
-                {visibleAmenities.length ? (
-                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    {visibleAmenities.map((amenity) => (
-                      <div key={amenity.id} className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 transition hover:border-emerald-200 hover:shadow-sm">
-                        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-50 text-violet-700">
-                          <Wifi className="h-4 w-4" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-slate-800">{amenity.name}</p>
-                          <p className="truncate text-xs text-slate-400">{amenity.icon || "Aucune icône associée"}</p>
-                        </div>
-                        <RowActions
-                          label={amenity.name}
-                          onEdit={() => beginEdit("amenity", amenity)}
-                          onDelete={() => setPendingDelete({ type: "amenity", id: amenity.id, name: amenity.name })}
+            <section className="space-y-4">
+              {accommodationCategories.length ? (
+                <>
+                  <SectionHeading
+                    icon={Layers3}
+                    title="Sous-catégories d’hébergements"
+                    description="Ajoutez et gérez les sous-catégories proposées pour vos hébergements."
+                    count={accommodationCategories.reduce((total, category) => total + (category.subcategories?.length ?? 0), 0)}
+                    onCreate={() => beginCreate()}
+                    createLabel="Nouvelle sous-catégorie"
+                  />
+                  {visibleCategories.length ? (
+                    <div className="grid gap-3 xl:grid-cols-2">
+                      {visibleCategories.map((category) => (
+                        <CategoryCard
+                          key={category.id}
+                          category={category}
+                          onAddSubcategory={() => beginCreate(category.id)}
+                          onEditSubcategory={beginEditSubcategory}
+                          onDeleteSubcategory={(subcategory) => setPendingDelete({ type: "subcategory", id: subcategory.id, name: subcategory.name })}
                         />
+                      ))}
+                    </div>
+                  ) : <EmptyState label="Aucune catégorie ne correspond à la recherche." />}
+                </>
+              ) : (
+                <EmptyState label="La catégorie Hébergement n’est pas encore configurée." />
+              )}
+            </section>
+            <section className="space-y-4">
+              <SectionHeading
+                icon={MapPin}
+                title="Lieux géographiques"
+                description="Définissez les pays, régions, villes et quartiers disponibles pour vos établissements."
+                count={locations.length}
+                onCreate={() => beginCreateCatalogItem("location")}
+                createLabel="Ajouter un lieu"
+              />
+              {visibleLocations.length ? (
+                <div className="overflow-x-auto rounded-xl border border-slate-200">
+                  <table className="w-full min-w-[620px] text-left text-sm">
+                    <thead className="bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      <tr><th className="px-4 py-3">Lieu</th><th className="px-4 py-3">Type</th><th className="px-4 py-3">Pays</th><th className="px-4 py-3">Statut</th><th className="px-4 py-3 text-right">Actions</th></tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {visibleLocations.map((location) => (
+                        <tr key={location.id} className="transition hover:bg-slate-50/70">
+                          <td className="px-4 py-3 font-semibold text-slate-800">{location.name}</td>
+                          <td className="px-4 py-3"><Badge variant="outline" className="border-blue-100 bg-blue-50 text-[10px] text-blue-700">{location.type}</Badge></td>
+                          <td className="px-4 py-3 text-slate-600">{location.country_code}</td>
+                          <td className="px-4 py-3"><Badge variant="outline" className={location.is_active ? "border-emerald-200 bg-emerald-50 text-[10px] text-emerald-700" : "border-slate-200 bg-slate-50 text-[10px] text-slate-500"}>{location.is_active ? "Actif" : "Inactif"}</Badge></td>
+                          <td className="px-4 py-3">
+                            <RowActions
+                              label={location.name}
+                              onEdit={() => beginEditCatalogItem("location", location)}
+                              onDelete={() => setPendingDelete({ type: "location", id: location.id, name: location.name })}
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : <EmptyState label="Aucun lieu ne correspond à la recherche." />}
+            </section>
+            <section className="space-y-4">
+              <SectionHeading
+                icon={Wifi}
+                title="Équipements"
+                description="Maintenez la liste des équipements disponibles."
+                count={amenities.length}
+                onCreate={() => beginCreateCatalogItem("amenity")}
+                createLabel="Ajouter un équipement"
+              />
+              {visibleAmenities.length ? (
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {visibleAmenities.map((amenity) => (
+                    <div key={amenity.id} className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 transition hover:border-emerald-200 hover:shadow-sm">
+                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-50 text-violet-700">
+                        <Wifi className="h-4 w-4" />
                       </div>
-                    ))}
-                  </div>
-                ) : <EmptyState label="Aucun équipement ne correspond à la recherche." />}
-              </section>
-            )}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-slate-800">{amenity.name}</p>
+                        <p className="truncate text-xs text-slate-400">{amenity.icon || "Aucune icône associée"}</p>
+                      </div>
+                      <RowActions
+                        label={amenity.name}
+                        onEdit={() => beginEditCatalogItem("amenity", amenity)}
+                        onDelete={() => setPendingDelete({ type: "amenity", id: amenity.id, name: amenity.name })}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : <EmptyState label="Aucun équipement ne correspond à la recherche." />}
+            </section>
           </div>
         )}
       </Card>
@@ -407,47 +409,22 @@ export default function AdminReferencesPage() {
             </FormField>
             {(type === "subcategory" || type === "amenity") && (
               <FormField label="Icône" hint="Optionnel">
-                <Input maxLength={100} value={form.icon} onChange={(event) => setForm((value) => ({ ...value, icon: event.target.value }))} placeholder="Ex. wifi, restaurant..." />
+                <Input maxLength={100} value={form.icon} onChange={(event) => setForm((value) => ({ ...value, icon: event.target.value }))} placeholder="Ex. wifi, bed..." />
               </FormField>
             )}
             {type === "subcategory" && (
-              <div className="space-y-1.5">
-                <label id="subcategory-category-label" className="block text-sm font-medium text-slate-700">
-                  Catégorie <span className="text-rose-500">*</span>
-                </label>
-                <Select
-                  required
-                  value={form.category_id}
-                  onValueChange={(categoryId) => setForm((value) => ({ ...value, category_id: categoryId }))}
-                >
-                  <SelectTrigger
-                    aria-labelledby="subcategory-category-label"
-                    className="h-10 w-full rounded-xl border-slate-200 bg-white"
-                  >
-                    <SelectValue placeholder="Choisir une catégorie" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <p className="text-sm text-slate-500">
+                Catégorie : {accommodationCategories.find((category) => category.id === form.category_id)?.name ?? "Hébergement"}
+              </p>
             )}
             {type === "location" && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <label id="location-type-label" className="block text-sm font-medium text-slate-700">
-                    Type <span className="text-rose-500">*</span>
-                  </label>
+                  <label id="location-type-label" className="block text-sm font-medium text-slate-700">Type <span className="text-rose-500">*</span></label>
                   <Select value={form.type} onValueChange={(value) => setForm((current) => ({ ...current, type: value }))}>
-                    <SelectTrigger aria-labelledby="location-type-label" className="h-10 w-full rounded-xl border-slate-200 bg-white">
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger aria-labelledby="location-type-label" className="h-10 w-full rounded-xl border-slate-200 bg-white"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {["COUNTRY", "REGION", "CITY", "DISTRICT", "NEIGHBORHOOD"].map((item) => (
-                        <SelectItem key={item} value={item}>{item}</SelectItem>
-                      ))}
+                      {["COUNTRY", "REGION", "CITY", "DISTRICT", "NEIGHBORHOOD"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -455,18 +432,12 @@ export default function AdminReferencesPage() {
                   <Input required minLength={2} maxLength={2} value={form.country_code} onChange={(event) => setForm((current) => ({ ...current, country_code: event.target.value }))} placeholder="BJ" />
                 </FormField>
                 <div className="space-y-1.5">
-                  <label id="location-parent-label" className="block text-sm font-medium text-slate-700">
-                    Lieu parent <span className="text-xs font-normal text-slate-400">Optionnel</span>
-                  </label>
+                  <label id="location-parent-label" className="block text-sm font-medium text-slate-700">Lieu parent <span className="text-xs font-normal text-slate-400">Optionnel</span></label>
                   <Select value={form.parent_id || "none"} onValueChange={(value) => setForm((current) => ({ ...current, parent_id: value === "none" ? "" : value }))}>
-                    <SelectTrigger aria-labelledby="location-parent-label" className="h-10 w-full rounded-xl border-slate-200 bg-white">
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger aria-labelledby="location-parent-label" className="h-10 w-full rounded-xl border-slate-200 bg-white"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Aucun</SelectItem>
-                      {locations.filter((location) => location.id !== form.id).map((location) => (
-                        <SelectItem key={location.id} value={location.id}>{location.name} ({location.type})</SelectItem>
-                      ))}
+                      {locations.filter((location) => location.id !== form.id).map((location) => <SelectItem key={location.id} value={location.id}>{location.name} ({location.type})</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -526,20 +497,6 @@ export default function AdminReferencesPage() {
   );
 }
 
-function SummaryCard({ icon: Icon, label, count, tint }: { icon: typeof Building2; label: string; count: number; tint: string }) {
-  return (
-    <Card className="rounded-2xl border-slate-200 p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-      <div className="flex items-center gap-3">
-        <div className={`grid h-11 w-11 place-items-center rounded-xl ${tint}`}><Icon className="h-5 w-5" /></div>
-        <div>
-          <p className="text-xl font-bold text-slate-900">{count.toLocaleString("fr-FR")}</p>
-          <p className="text-xs text-slate-500">{label}</p>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
 function SectionHeading({
   icon: Icon,
   title,
@@ -568,6 +525,20 @@ function SectionHeading({
         <Plus className="mr-1.5 h-4 w-4" />{createLabel}
       </Button>
     </div>
+  );
+}
+
+function SummaryCard({ icon: Icon, label, count, tint }: { icon: typeof Building2; label: string; count: number; tint: string }) {
+  return (
+    <Card className="rounded-2xl border-slate-200 p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <div className="flex items-center gap-3">
+        <div className={`grid h-11 w-11 place-items-center rounded-xl ${tint}`}><Icon className="h-5 w-5" /></div>
+        <div>
+          <p className="text-xl font-bold text-slate-900">{count.toLocaleString("fr-FR")}</p>
+          <p className="text-xs text-slate-500">{label}</p>
+        </div>
+      </div>
+    </Card>
   );
 }
 

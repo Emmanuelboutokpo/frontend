@@ -19,14 +19,12 @@ export default function AdminProfilePage() {
   const uploadAvatar = useAdminAccountStore((state) => state.uploadAvatar);
   const deleteAvatar = useAdminAccountStore((state) => state.deleteAvatar);
   const changePassword = useAdminAccountStore((state) => state.changePassword);
-  const deleteAccount = useAdminAccountStore((state) => state.deleteAccount);
   const clearSession = useAuthStore((state) => state.clearSession);
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", phone: "" });
-  const [password, setPassword] = useState({ next: "", confirm: "" });
+  const [password, setPassword] = useState({ current: "", next: "", confirm: "" });
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [success, setSuccess] = useState("");
 
   useEffect(() => {
@@ -75,8 +73,8 @@ export default function AdminProfilePage() {
     setSuccess("");
     setIsChangingPassword(true);
     try {
-      await changePassword(password.next, password.confirm);
-      setPassword({ next: "", confirm: "" });
+      await changePassword(password.current, password.next, password.confirm);
+      setPassword({ current: "", next: "", confirm: "" });
       setSuccess("Votre mot de passe a été modifié. Veuillez vous reconnecter.");
       clearSession();
       window.location.assign("/");
@@ -84,20 +82,6 @@ export default function AdminProfilePage() {
       // The store exposes the API error on this page.
     } finally {
       setIsChangingPassword(false);
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    if (!window.confirm("Supprimer définitivement votre compte administrateur ? Cette action est irréversible.")) return;
-    setSuccess("");
-    setIsDeleting(true);
-    try {
-      await deleteAccount();
-      window.location.assign("/");
-    } catch {
-      // The store exposes the API error on this page.
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -179,8 +163,9 @@ export default function AdminProfilePage() {
             <Label htmlFor="admin-email">Email</Label>
             <div className="relative mt-1.5">
               <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input id="admin-email" type="email" required maxLength={254} value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} className="h-11 rounded-xl pl-10" />
+              <Input id="admin-email" type="email" value={form.email} readOnly aria-describedby="admin-email-hint" className="h-11 rounded-xl bg-slate-50 pl-10 text-slate-500" />
             </div>
+            <p id="admin-email-hint" className="mt-1 text-xs text-slate-500">L’adresse e-mail ne peut pas être modifiée depuis cet espace.</p>
           </div>
           <div>
             <Label htmlFor="admin-phone">Téléphone</Label>
@@ -202,6 +187,10 @@ export default function AdminProfilePage() {
             <p className="mt-1 text-sm text-slate-500">Choisissez un nouveau mot de passe pour votre compte.</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <Label htmlFor="admin-current-password">Mot de passe actuel <span className="text-rose-500">*</span></Label>
+              <Input id="admin-current-password" type="password" autoComplete="current-password" minLength={8} maxLength={128} required value={password.current} onChange={(event) => setPassword({ ...password, current: event.target.value })} className="mt-1.5 h-11 rounded-xl" />
+            </div>
             <div>
               <Label htmlFor="admin-new-password">Nouveau mot de passe <span className="text-rose-500">*</span></Label>
               <Input id="admin-new-password" type="password" autoComplete="new-password" minLength={8} maxLength={128} required value={password.next} onChange={(event) => setPassword({ ...password, next: event.target.value })} className="mt-1.5 h-11 rounded-xl" />
@@ -217,18 +206,10 @@ export default function AdminProfilePage() {
               {password.next && password.next === password.confirm ? "✓" : "•"} Les mots de passe correspondent
             </li>
           </ul>
-          <Button type="submit" disabled={!profile || isChangingPassword || !passwordRules.every((rule) => rule.valid) || password.next !== password.confirm} className="rounded-xl bg-emerald-700 hover:bg-emerald-800">
+          <Button type="submit" disabled={!profile || isChangingPassword || password.current.length < 8 || !passwordRules.every((rule) => rule.valid) || password.next !== password.confirm} className="rounded-xl bg-emerald-700 hover:bg-emerald-800">
             {isChangingPassword ? "Modification…" : "Modifier le mot de passe"}
           </Button>
         </form>
-      </Card>
-
-      <Card className="rounded-2xl border-rose-200 p-6">
-        <h2 className="text-sm font-bold text-rose-700">Zone de danger</h2>
-        <p className="mt-1 text-sm text-slate-500">La suppression de votre compte administrateur est définitive.</p>
-        <Button type="button" variant="destructive" disabled={!profile || isDeleting} onClick={() => void handleDeleteAccount()} className="mt-4 rounded-xl">
-          <Trash2 className="mr-2 h-4 w-4" />{isDeleting ? "Suppression…" : "Supprimer mon compte"}
-        </Button>
       </Card>
     </div>
   );

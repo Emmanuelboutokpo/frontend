@@ -18,6 +18,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { amenityIconMap, Establishment, EntityId, Photo } from '@/types/types'
 import { useAmenities, useAuthStore, usePropertyStore } from '@/store'
 import { Badge } from '@/components/ui/badge'
+import { getEstablishmentDetailPath } from '@/utils/establishment.helpers'
 
 const categoryPaths: Record<string, string> = { 1: 'hebergement', 2: 'restaurant', 3: 'loisir' }
 
@@ -58,11 +59,10 @@ function formatPrice(property: Establishment) {
 }
 
 function propertyHref(property: Establishment, subcategorySlugs: Record<string, string>) {
-  const categoryPath = property.category?.slug ?? categoryPaths[String(property.category_id)] ?? 'hebergement'
+  const categorySlug = property.category?.slug ?? categoryPaths[String(property.category_id)] ?? 'hebergement'
   const subcategorySlug = property.subcategory?.slug ??
     (property.subcategory_id ? subcategorySlugs[String(property.subcategory_id)] : undefined)
-  const subcategoryPath = subcategorySlug ? `/${subcategorySlug}` : ''
-  return `/${categoryPath}${subcategoryPath}/${property.slug}`
+  return getEstablishmentDetailPath(categorySlug, subcategorySlug, property.slug)
 }
 
 function PropertyShowcase({ property, photo, typeName, location, subcategorySlugs }: { property: Establishment; photo?: Photo; subcategorySlugs: Record<string, string> ;  typeName: string; location: string;}) {

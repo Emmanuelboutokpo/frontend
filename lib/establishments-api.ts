@@ -122,11 +122,17 @@ export function normalizeApiCategory(value: unknown): Category | undefined {
   const name = asString(value.name);
   if (id === undefined || !name) return undefined;
   const slug = slugify(asString(firstValue(value.slug, name)));
+  const image = value.img;
   return {
     id,
     name,
     slug,
     icon: asString(value.icon, "building"),
+    img: typeof image === "string"
+      ? image
+      : isRecord(image) && typeof image.url === "string"
+        ? image.url
+        : undefined,
     has_subcategories: Boolean(value.has_subcategories),
     description: asString(value.description),
   };

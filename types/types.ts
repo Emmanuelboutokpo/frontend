@@ -82,6 +82,7 @@ export interface Category {
   name: string;
   slug: string;
   icon: string;
+  img?: string;
   has_subcategories: boolean;
   description: string;
 }

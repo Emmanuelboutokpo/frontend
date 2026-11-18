@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from "@/components/ui/textarea";
 import { usePropertyStore } from "@/store/propertyStore";
 import { useCustomerReservationsStore } from "@/store/useCustomerReservationsStore";
+import { getEstablishmentDetailPath } from "@/utils/establishment.helpers";
 
 const STATUS: Record<string, { label: string; className: string }> = {
   EN_ATTENTE: { label: "En attente", className: "bg-amber-50 text-amber-700" },
@@ -77,7 +78,11 @@ export default function ReservationDetailPage() {
   const canCancel = reservation?.status === "EN_ATTENTE" || reservation?.status === "CONFIRMEE";
   const status = reservation ? STATUS[reservation.status] ?? STATUS.EN_ATTENTE : null;
   const establishmentHref = establishment
-    ? `/${category?.slug === "loisir" ? "loisirs" : category?.slug ?? "explorer"}${subcategory?.slug ? `/${subcategory.slug}` : ""}/${establishment.slug}`
+    ? getEstablishmentDetailPath(
+        category?.slug === "loisir" ? "loisirs" : category?.slug,
+        subcategory?.slug,
+        establishment.slug
+      )
     : "/explorer";
 
   const handleCancel = async () => {
