@@ -263,7 +263,7 @@ export default function Home() {
     </section>}
 
     <section id="pourquoi" className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-12">
-      <h2 className="text-2xl font-extrabold tracking-[-0.04em] text-black sm:text-3xl">Pourquoi choisir BestReserv ?</h2>
+      <h2 className="text-2xl font-extrabold tracking-[-0.04em] text-black sm:text-3xl">Pourquoi choisir BestReservs ?</h2>
       <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {[{ icon: ShieldCheck, title: 'Des adresses vérifiées', description: 'Qualité et fiabilité' }, { icon: CalendarDays, title: 'Réservation simple', description: 'En quelques clics' }, { icon: Star, title: 'Meilleurs prix', description: 'Des offres exclusives' }, { icon: Heart, title: 'Support local', description: 'Une équipe à votre écoute' }].map((item) => {
           const Icon = item.icon;

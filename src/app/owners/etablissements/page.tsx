@@ -62,6 +62,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ClientOnlyDate } from "@/components/ui/clientonlydate";
+import { OpenStreetMapPlacePicker } from "@/components/owners/OpenStreetMapPlacePicker";
 
 type FormValues = {
   name: string;
@@ -731,7 +732,20 @@ export default function AdminEstablishmentsPage() {
                       className="sm:col-span-2"
                       value={values.address}
                       placeholder="Adresse complète de l’établissement"
-                      onChange={(value) => setValues((prev) => ({ ...prev, address: value }))}
+                      onChange={(value) => setValues((prev) => ({
+                        ...prev,
+                        address: value,
+                        latitude: "",
+                        longitude: "",
+                      }))}
+                    />
+                    <OpenStreetMapPlacePicker
+                      onSelect={({ address, latitude, longitude }) => setValues((prev) => ({
+                        ...prev,
+                        address: address || prev.address,
+                        latitude: String(latitude),
+                        longitude: String(longitude),
+                      }))}
                     />
                     <label className="space-y-1.5 text-sm font-medium text-slate-700 sm:col-span-2">
                       Description
